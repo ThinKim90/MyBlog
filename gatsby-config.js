@@ -9,7 +9,7 @@
  */
 module.exports = {
   siteMetadata: {
-    title: `My Blog`,
+    title: `Thin`,
     description: `개인 블로그입니다. 다양한 주제들을 다룹니다.`,
     author: `@yourusername`,
     siteUrl: `https://yourblog.com`, // 나중에 실제 도메인으로 변경

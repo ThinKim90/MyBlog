@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react"
 import { graphql, Link } from "gatsby"
-import { Helmet } from "react-helmet"
+import Layout from "../components/Layout"
 
 interface BlogIndexProps {
   data: {
@@ -43,6 +43,14 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
     return ["전체", ...uniqueCategories]
   }, [posts])
 
+  // 각 카테고리별 포스트 개수 계산
+  const getCategoryCount = (category: string) => {
+    if (category === "전체") {
+      return posts.length
+    }
+    return posts.filter(post => post.frontmatter.category === category).length
+  }
+
   // 선택된 카테고리에 따라 포스트 필터링
   const filteredPosts = useMemo(() => {
     if (selectedCategory === "전체") {
@@ -53,12 +61,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
 
   if (posts.length === 0) {
     return (
-      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-        <Helmet title={siteTitle} />
-        <header style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <h1 style={{ marginBottom: '10px', color: '#333' }}>{siteTitle}</h1>
-          <p style={{ color: '#666', fontSize: '18px' }}>{siteDescription}</p>
-        </header>
+      <Layout title="홈" description={siteDescription}>
         <main>
           <p style={{ textAlign: 'center', color: '#666', fontSize: '18px' }}>
             아직 블로그 포스트가 없습니다. 첫 번째 포스트를 작성해보세요!
@@ -69,29 +72,18 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
             </p>
           </div>
         </main>
-      </div>
+      </Layout>
     )
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-      <Helmet title={siteTitle} />
-      
-      <header style={{ textAlign: 'center', marginBottom: '40px' }}>
-        <h1 style={{ marginBottom: '10px', color: '#333' }}>{siteTitle}</h1>
-        <p style={{ color: '#666', fontSize: '18px' }}>{siteDescription}</p>
-      </header>
-
+    <Layout title="홈" description={siteDescription}>
       {/* 카테고리 필터 */}
       <div style={{ marginBottom: '40px' }}>
-        <h3 style={{ marginBottom: '15px', color: '#333', fontSize: '18px' }}>
-          카테고리
-        </h3>
         <div style={{
           display: 'flex',
           flexWrap: 'wrap',
-          gap: '10px',
-          marginBottom: '20px'
+          gap: '10px'
         }}>
           {categories.map(category => (
             <button
@@ -99,57 +91,71 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
               onClick={() => setSelectedCategory(category)}
               style={{
                 padding: '8px 16px',
-                border: '2px solid #ddd',
-                borderRadius: '20px',
-                background: selectedCategory === category ? '#0066cc' : 'white',
-                color: selectedCategory === category ? 'white' : '#333',
+                border: 'none',
+                borderRadius: '8px',
+                background: selectedCategory === category ? '#8b7d6b' : 'transparent',
+                color: selectedCategory === category ? 'white' : '#6b645c',
                 cursor: 'pointer',
                 fontSize: '14px',
                 fontWeight: selectedCategory === category ? '600' : '400',
-                transition: 'all 0.2s ease',
-                outline: 'none'
+                transition: 'all 0.3s ease',
+                outline: 'none',
+                boxShadow: 'none',
+                WebkitAppearance: 'none',
+                MozAppearance: 'none',
+                appearance: 'none',
+                position: 'relative'
               }}
               onMouseEnter={(e) => {
                 if (selectedCategory !== category) {
-                  e.currentTarget.style.borderColor = '#0066cc'
-                  e.currentTarget.style.color = '#0066cc'
+                  e.currentTarget.style.color = '#4a453e'
+                  e.currentTarget.style.background = '#f0ede6'
                 }
               }}
               onMouseLeave={(e) => {
                 if (selectedCategory !== category) {
-                  e.currentTarget.style.borderColor = '#ddd'
-                  e.currentTarget.style.color = '#333'
+                  e.currentTarget.style.color = '#6b645c'
+                  e.currentTarget.style.background = 'transparent'
                 }
               }}
+              onFocus={(e) => {
+                // 접근성: 포커스를 위한 미묘한 배경 변화만 (테두리 없이)
+                if (selectedCategory === category) {
+                  e.currentTarget.style.background = '#6b645c'
+                } else {
+                  e.currentTarget.style.background = '#e8e4db'
+                  e.currentTarget.style.color = '#2d2823'
+                }
+              }}
+              onBlur={(e) => {
+                if (selectedCategory === category) {
+                  e.currentTarget.style.background = '#8b7d6b'
+                } else {
+                  e.currentTarget.style.background = 'transparent'
+                  e.currentTarget.style.color = '#6b645c'
+                }
+              }}
+              aria-pressed={selectedCategory === category}
+              role="button"
+              tabIndex={0}
             >
-              {category}
+              {category} ({getCategoryCount(category)})
             </button>
           ))}
         </div>
-        
-        {/* 필터링된 포스트 개수 표시 */}
-        <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>
-          {selectedCategory === "전체" 
-            ? `총 ${posts.length}개의 포스트` 
-            : `'${selectedCategory}' 카테고리: ${filteredPosts.length}개의 포스트`
-          }
-        </p>
       </div>
 
       <main>
         <div>
-          {filteredPosts.map(post => {
+          {filteredPosts.map((post, index) => {
             const title = post.frontmatter.title || post.fields.slug
 
             return (
               <article
                 key={post.fields.slug}
                 style={{
-                  marginBottom: '40px',
-                  padding: '20px',
-                  border: '1px solid #eee',
-                  borderRadius: '8px',
-                  backgroundColor: '#fafafa'
+                  padding: '24px 0',
+                  borderBottom: index < filteredPosts.length - 1 ? '1px solid #e8e4db' : 'none'
                 }}
               >
                 <header>
@@ -158,8 +164,8 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
                     <span style={{
                       display: 'inline-block',
                       padding: '4px 8px',
-                      backgroundColor: '#e3f2fd',
-                      color: '#1976d2',
+                      backgroundColor: '#f0ede6',
+                      color: '#4a453e',
                       borderRadius: '12px',
                       fontSize: '12px',
                       fontWeight: '500'
@@ -173,7 +179,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
                       to={post.fields.slug}
                       style={{
                         textDecoration: 'none',
-                        color: '#333',
+                        color: '#2d2823',
                         fontSize: '24px'
                       }}
                     >
@@ -187,7 +193,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
                     style={{
                       marginTop: '15px',
                       lineHeight: '1.6',
-                      color: '#555'
+                      color: '#4a453e'
                     }}
                     dangerouslySetInnerHTML={{
                       __html: post.frontmatter.description || post.excerpt,
@@ -210,7 +216,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
               style={{
                 marginTop: '10px',
                 padding: '8px 16px',
-                background: '#0066cc',
+                background: '#8b7d6b',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
@@ -222,7 +228,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
           </div>
         )}
       </main>
-    </div>
+    </Layout>
   )
 }
 

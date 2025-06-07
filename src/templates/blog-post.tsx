@@ -1,6 +1,6 @@
 import React from "react"
 import { graphql, Link } from "gatsby"
-import { Helmet } from "react-helmet"
+import Layout from "../components/Layout"
 
 interface BlogPostTemplateProps {
   data: {
@@ -45,8 +45,10 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
   const { previous, next } = data
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-      <Helmet title={`${post.frontmatter.title} | ${siteTitle}`} />
+    <Layout 
+      title={post.frontmatter.title}
+      description={post.frontmatter.description || post.excerpt}
+    >
       
       <header style={{ marginBottom: '40px' }}>
         <div style={{ marginBottom: '15px' }}>
@@ -190,7 +192,7 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
           블로그 홈으로 돌아가기
         </Link>
       </div>
-    </div>
+    </Layout>
   )
 }
 
