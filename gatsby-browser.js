@@ -5,3 +5,7 @@
  */
 
 // You can delete this file if you're not using it
+
+// Import PrismJS CSS for code highlighting
+import "prismjs/themes/prism-tomorrow.css"
+import "prismjs/plugins/line-numbers/prism-line-numbers.css"
