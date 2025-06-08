@@ -52,28 +52,17 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
       
       <header style={{ marginBottom: '40px' }}>
         <div style={{ marginBottom: '15px' }}>
-          <Link 
-            to="/"
-            style={{
-              display: 'inline-block',
-              padding: '6px 12px',
-              backgroundColor: '#e3f2fd',
-              color: '#1976d2',
-              borderRadius: '15px',
-              fontSize: '14px',
-              fontWeight: '500',
-              textDecoration: 'none',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#bbdefb'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#e3f2fd'
-            }}
-          >
-            📂 {post.frontmatter.category}
-          </Link>
+          <span style={{
+            display: 'inline-block',
+            padding: '4px 8px',
+            backgroundColor: '#f0ede6',
+            color: '#4a453e',
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: '500'
+          }}>
+            {post.frontmatter.category}
+          </span>
         </div>
         
         <h1 style={{ marginBottom: '10px', color: '#333' }}>
@@ -114,17 +103,17 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
                 rel="prev"
                 style={{
                   textDecoration: 'none',
-                  color: '#0066cc',
+                  color: '#4a453e',
                   fontSize: '16px',
                   display: 'flex',
                   alignItems: 'center',
                   padding: '8px 0'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#004499'
+                  e.currentTarget.style.color = '#2d2823'
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#0066cc'
+                  e.currentTarget.style.color = '#4a453e'
                 }}
               >
                 <span style={{ marginRight: '8px' }}>←</span>
@@ -142,7 +131,7 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
                 rel="next"
                 style={{
                   textDecoration: 'none',
-                  color: '#0066cc',
+                  color: '#4a453e',
                   fontSize: '16px',
                   display: 'flex',
                   alignItems: 'center',
@@ -150,10 +139,10 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
                   padding: '8px 0'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#004499'
+                  e.currentTarget.style.color = '#2d2823'
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#0066cc'
+                  e.currentTarget.style.color = '#4a453e'
                 }}
               >
                 <div style={{ textAlign: 'right' }}>
@@ -170,22 +159,22 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
       <div style={{ marginTop: '40px', textAlign: 'center' }}>
         <Link to="/" style={{ 
           textDecoration: 'none', 
-          color: '#0066cc',
+          color: '#8b7d6b',
           fontSize: '16px',
           display: 'inline-flex',
           alignItems: 'center',
           padding: '10px 20px',
-          border: '2px solid #0066cc',
+          border: '2px solid #8b7d6b',
           borderRadius: '25px',
           transition: 'all 0.2s ease'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#0066cc'
+          e.currentTarget.style.backgroundColor = '#8b7d6b'
           e.currentTarget.style.color = 'white'
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = 'transparent'
-          e.currentTarget.style.color = '#0066cc'
+          e.currentTarget.style.color = '#8b7d6b'
         }}
         >
           <span style={{ marginRight: '8px' }}>🏠</span>

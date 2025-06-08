@@ -9,7 +9,7 @@
  */
 module.exports = {
   siteMetadata: {
-    title: `Thin`,
+    title: `Thin Blog`,
     description: `개인 블로그입니다. 다양한 주제들을 다룹니다.`,
     author: `@yourusername`,
     siteUrl: `https://yourblog.com`, // 나중에 실제 도메인으로 변경
@@ -56,6 +56,12 @@ module.exports = {
     `gatsby-transformer-sharp`,
     `gatsby-plugin-sharp`,
     `gatsby-plugin-image`,
+      {
+          resolve: `gatsby-plugin-google-adsense`,
+          options: {
+              publisherId: `ca-pub-2944637253847543`,
+          },
+      },
     // this (optional) plugin enables Progressive Web App + Offline functionality
     // To learn more, visit: https://gatsby.dev/offline
     // `gatsby-plugin-offline`,
