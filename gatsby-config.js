@@ -12,7 +12,7 @@ module.exports = {
     title: `Thin Blog`,
     description: `개인 블로그입니다. 다양한 주제들을 다룹니다.`,
     author: `@yourusername`,
-    siteUrl: `https://yourblog.com`, // 나중에 실제 도메인으로 변경
+    siteUrl: `https://thinblog.netlify.app/`, // 나중에 실제 도메인으로 변경
   },
   plugins: [
     {
