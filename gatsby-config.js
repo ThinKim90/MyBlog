@@ -13,6 +13,11 @@ module.exports = {
     description: `개인 블로그입니다. 다양한 주제들을 다룹니다.`,
     author: `@yourusername`,
     siteUrl: `https://thinblog.netlify.app/`, // 나중에 실제 도메인으로 변경
+    contact: {
+      email: `ksehg112@gmail.com`,
+      github: `https://github.com/kimsaehyoung`,
+      linkedin: `https://www.linkedin.com/in/designerksh/`
+    }
   },
   plugins: [
     {
@@ -56,6 +61,18 @@ module.exports = {
     `gatsby-transformer-sharp`,
     `gatsby-plugin-sharp`,
     `gatsby-plugin-image`,
+    {
+      resolve: `gatsby-plugin-manifest`,
+      options: {
+        name: `Thin Blog`,
+        short_name: `ThinBlog`,
+        start_url: `/`,
+        background_color: `#f8f6f0`,
+        theme_color: `#8b7d6b`,
+        display: `minimal-ui`,
+        icon: `static/favicon.png`, // 512x512 이상의 PNG 파일 하나만 필요
+      },
+    },
       {
           resolve: `gatsby-plugin-google-adsense`,
           options: {

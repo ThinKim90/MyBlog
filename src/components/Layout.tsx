@@ -76,6 +76,8 @@ const Layout: React.FC<LayoutProps> = ({
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
               line-height: 1.6;
               color: #2d2823;
+              word-break: keep-all;
+              word-wrap: break-word;
             }
             
             html {

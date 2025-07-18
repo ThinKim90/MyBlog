@@ -33,9 +33,9 @@ const Header: React.FC<HeaderProps> = ({ siteTitle = "" }) => {
             style={{
               textDecoration: 'none',
               color: '#2d2823',
-              fontSize: '28px',
-              fontWeight: 'bold',
-              fontFamily: "'Savate', sans-serif",
+              fontSize: '32px',
+              fontWeight: '400',
+              fontFamily: "'Darker Grotesque', sans-serif",
               display: 'flex',
               alignItems: 'center',
               transition: 'transform 0.2s ease',

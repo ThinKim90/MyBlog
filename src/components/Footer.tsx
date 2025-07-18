@@ -9,12 +9,18 @@ const Footer: React.FC = () => {
       site {
         siteMetadata {
           title
+          contact {
+            email
+            github
+            linkedin
+          }
         }
       }
     }
   `)
   
   const siteTitle = data.site.siteMetadata.title
+  const contact = data.site.siteMetadata.contact
 
   return (
     <footer style={{
@@ -110,7 +116,7 @@ const Footer: React.FC = () => {
               flexWrap: 'wrap'
             }}>
               <a
-                href="https://github.com/kimsaehyoung/MyBlog"
+                href={contact.github}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
@@ -139,7 +145,9 @@ const Footer: React.FC = () => {
               </a>
 
               <a
-                href="mailto:your.email@example.com"
+                href={`mailto:${contact.email}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -166,7 +174,7 @@ const Footer: React.FC = () => {
               </a>
 
               <a
-                href="https://linkedin.com"
+                href={contact.linkedin}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
@@ -220,7 +228,7 @@ const Footer: React.FC = () => {
             <span>Built with 🤍 using Gatsby</span>
             <span>|</span>
             <a
-              href="https://github.com/kimsaehyoung/MyBlog"
+              href={contact.github}
               target="_blank"
               rel="noopener noreferrer"
               style={{

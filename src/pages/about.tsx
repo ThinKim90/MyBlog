@@ -8,19 +8,33 @@ const AboutPage: React.FC = () => {
       site {
         siteMetadata {
           title
+          contact {
+            email
+            github
+          }
         }
       }
     }
   `)
   
+  // UX/UI 디자이너 시작 연도 (본인의 실제 시작 연도로 수정하세요)
+  const CAREER_START_YEAR = 2019 // 2025년 기준 7년차이므로 2019년 시작
+  
+  // 현재 연차 계산 함수
+  const calculateYearsOfExperience = () => {
+    const currentYear = new Date().getFullYear()
+    return currentYear - CAREER_START_YEAR + 1 // +1은 첫 해도 1년차로 계산
+  }
+  
   const siteTitle = data.site.siteMetadata.title
-  const frontendTechs = ['React', 'TypeScript', 'Gatsby', 'HTML/CSS', 'JavaScript']
-  const tools = ['Git/GitHub', 'Node.js', 'GraphQL', 'VS Code', 'Figma']
+  const contact = data.site.siteMetadata.contact
+  const designSkills = ['Figma', 'Prototyping', 'Design System', 'User Research']
+  const tools = ['기본적인 Adobe 툴들', 'Figma', 'Notion', '친해지고 있는 GPT', '친해지고 싶은 Cursor']
 
   return (
     <Layout
       title={`About - ${siteTitle}`}
-      description="개발자 김세형에 대한 소개 페이지입니다. 기술 스택과 경험을 확인해보세요."
+      description="UX/UI 디자이너 Thin에 대한 소개 페이지입니다. 기술 스택과 경험을 확인해보세요."
     >
       <div style={{
         maxWidth: '800px',
@@ -53,7 +67,7 @@ const AboutPage: React.FC = () => {
             color: '#2d2823',
             fontWeight: 'bold'
           }}>
-            안녕하세요! 김세형입니다
+            안녕하세요, UX/UI 디자이너 띤입니다!
           </h1>
           
           <p style={{
@@ -61,7 +75,7 @@ const AboutPage: React.FC = () => {
             color: '#4a453e',
             marginBottom: '0'
           }}>
-            끊임없이 배우고 성장하는 개발자
+            가늘고 길게, 그러나 뾰족하게 성장하고 싶은 {calculateYearsOfExperience()}년차 UX/UI 디자이너.
           </p>
         </div>
 
@@ -90,9 +104,7 @@ const AboutPage: React.FC = () => {
               color: '#4a453e',
               marginBottom: '20px' 
             }}>
-              안녕하세요! 풀스택 개발자를 꿈꾸는 <strong>김세형</strong>입니다. 
-              현재 <strong>React</strong>와 <strong>TypeScript</strong>를 중심으로 한 프론트엔드 개발에 집중하고 있으며, 
-              사용자 경험을 중시하는 웹 애플리케이션을 만들어가고 있습니다.
+              안녕하세요! UX/UI 디자이너 <strong>Thin</strong>입니다. 
             </p>
             
             <p style={{ 
@@ -100,8 +112,7 @@ const AboutPage: React.FC = () => {
               color: '#4a453e',
               marginBottom: '20px' 
             }}>
-              새로운 기술을 배우는 것을 좋아하고, 문제를 해결하는 과정에서 오는 성취감을 중요하게 생각합니다. 
-              코딩뿐만 아니라 UI/UX 디자인에도 관심이 많아 사용자 중심의 개발을 추구합니다.
+              다양한 기술 기반 B2B 환경에서 사용자 경험을 구조화하고 제품화하는 과정에 참여해왔으며, 문제 정의 단계부터 사용자 인터뷰, IA 설계, 디자인 시스템 구축, 린 MVP 실험까지의 전 과정을 실무 속에서 경험했습니다.
             </p>
             
             <p style={{ 
@@ -109,8 +120,8 @@ const AboutPage: React.FC = () => {
               color: '#4a453e',
               marginBottom: '0' 
             }}>
-              이 블로그는 제가 개발하면서 겪은 경험과 배운 내용들을 기록하고 공유하는 공간입니다. 
-              함께 성장할 수 있는 개발자 커뮤니티에 기여하고 싶습니다.
+              이 블로그는 프로젝트 경험 및 회고 뿐만 아니라 관심사 기록 및 다양한 경험들을 공유하는 공간입니다. 가늘고 길게, 그러나 뾰족하게 —
+              성장하는 과정을 남기고 있습니다.
             </p>
           </div>
         </section>
@@ -133,7 +144,7 @@ const AboutPage: React.FC = () => {
             gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
             gap: '30px'
           }}>
-            {/* Frontend */}
+            {/* Design Skills */}
             <div style={{
               background: 'white',
               padding: '25px',
@@ -148,7 +159,7 @@ const AboutPage: React.FC = () => {
                 alignItems: 'center'
               }}>
                 <span style={{ marginRight: '10px' }}>🎨</span>
-                Frontend
+                Design Skills
               </h3>
               
               <div style={{
@@ -156,9 +167,9 @@ const AboutPage: React.FC = () => {
                 flexWrap: 'wrap',
                 gap: '10px'
               }}>
-                {frontendTechs.map((tech) => (
+                {designSkills.map((skill) => (
                   <span
-                    key={tech}
+                    key={skill}
                     style={{
                       background: '#f0ede6',
                       color: '#4a453e',
@@ -169,7 +180,7 @@ const AboutPage: React.FC = () => {
                       border: '1px solid #e8e4db'
                     }}
                   >
-                    {tech}
+                    {skill}
                   </span>
                 ))}
               </div>
@@ -254,7 +265,9 @@ const AboutPage: React.FC = () => {
               flexWrap: 'wrap'
             }}>
               <a
-                href="mailto:your.email@example.com"
+                href={`mailto:${contact.email}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -284,7 +297,7 @@ const AboutPage: React.FC = () => {
               </a>
               
               <a
-                href="https://github.com/kimsaehyoung"
+                href={contact.github}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
