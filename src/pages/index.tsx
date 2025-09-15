@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useEffect } from "react"
 import { graphql, Link } from "gatsby"
 import Layout from "../components/Layout"
+import ViewCounter from "../components/ViewCounter"
 
 interface BlogIndexProps {
   data: {
@@ -28,12 +29,8 @@ interface BlogIndexProps {
 }
 
 const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
-  const siteTitle = data.site.siteMetadata?.title || `Title`
   const siteDescription = data.site.siteMetadata?.description || ``
   const posts = data.allMarkdownRemark.nodes
-
-  // 카테고리 필터 상태
-  const [selectedCategory, setSelectedCategory] = useState("전체")
 
   // 모든 카테고리 추출 (전체를 첫 번째로)
   const categories = useMemo(() => {
@@ -42,6 +39,31 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
     ).sort()
     return ["전체", ...uniqueCategories]
   }, [posts])
+
+  // 카테고리 필터 상태
+  const [selectedCategory, setSelectedCategory] = useState("전체")
+
+  // URL 해시에서 카테고리 읽기
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.slice(1) // # 제거
+      if (hash && categories.includes(hash)) {
+        setSelectedCategory(hash)
+      }
+    }
+  }, [categories])
+
+  // 카테고리 변경 시 URL 해시 업데이트
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category)
+    if (typeof window !== 'undefined') {
+      if (category === "전체") {
+        window.history.replaceState(null, '', window.location.pathname)
+      } else {
+        window.history.replaceState(null, '', `#${encodeURIComponent(category)}`)
+      }
+    }
+  }
 
   // 각 카테고리별 포스트 개수 계산
   const getCategoryCount = (category: string) => {
@@ -77,73 +99,14 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
   }
 
   return (
-    <Layout title="홈" description={siteDescription}>
-      {/* 카테고리 필터 */}
-      <div style={{ marginBottom: '40px' }}>
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '10px'
-        }}>
-          {categories.map(category => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              style={{
-                padding: '8px 16px',
-                border: 'none',
-                borderRadius: '8px',
-                background: selectedCategory === category ? '#8b7d6b' : 'transparent',
-                color: selectedCategory === category ? 'white' : '#6b645c',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: selectedCategory === category ? '600' : '400',
-                transition: 'all 0.3s ease',
-                outline: 'none',
-                boxShadow: 'none',
-                WebkitAppearance: 'none',
-                MozAppearance: 'none',
-                appearance: 'none',
-                position: 'relative'
-              }}
-              onMouseEnter={(e) => {
-                if (selectedCategory !== category) {
-                  e.currentTarget.style.color = '#4a453e'
-                  e.currentTarget.style.background = '#f0ede6'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedCategory !== category) {
-                  e.currentTarget.style.color = '#6b645c'
-                  e.currentTarget.style.background = 'transparent'
-                }
-              }}
-              onFocus={(e) => {
-                // 접근성: 포커스를 위한 미묘한 배경 변화만 (테두리 없이)
-                if (selectedCategory === category) {
-                  e.currentTarget.style.background = '#6b645c'
-                } else {
-                  e.currentTarget.style.background = '#e8e4db'
-                  e.currentTarget.style.color = '#2d2823'
-                }
-              }}
-              onBlur={(e) => {
-                if (selectedCategory === category) {
-                  e.currentTarget.style.background = '#8b7d6b'
-                } else {
-                  e.currentTarget.style.background = 'transparent'
-                  e.currentTarget.style.color = '#6b645c'
-                }
-              }}
-              aria-pressed={selectedCategory === category}
-              role="button"
-              tabIndex={0}
-            >
-              {category} ({getCategoryCount(category)})
-            </button>
-          ))}
-        </div>
-      </div>
+    <Layout 
+      title="홈" 
+      description={siteDescription}
+      categories={categories}
+      selectedCategory={selectedCategory}
+      onCategoryChange={handleCategoryChange}
+      getCategoryCount={getCategoryCount}
+    >
 
       <main>
         <div>
@@ -158,9 +121,18 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
                   borderBottom: index < filteredPosts.length - 1 ? '1px solid #e8e4db' : 'none'
                 }}
               >
-                <header>
-                  {/* 카테고리 태그 */}
-                  <div style={{ marginBottom: '10px' }}>
+                {/* 통합된 카드 레이아웃 */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  {/* 카테고리 */}
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'flex-start',
+                  }}>
                     <span style={{
                       display: 'inline-block',
                       padding: '4px 8px',
@@ -168,30 +140,41 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
                       color: '#4a453e',
                       borderRadius: '12px',
                       fontSize: '12px',
-                      fontWeight: '500'
+                      fontWeight: '500',
+                      whiteSpace: 'nowrap',
+                      lineHeight: '1.2'
                     }}>
                       {post.frontmatter.category}
                     </span>
                   </div>
                   
-                  <h2 style={{ marginBottom: '10px' }}>
+                  {/* 타이틀 */}
+                  <h2 style={{ 
+                    margin: 0, 
+                    padding: 0, 
+                    lineHeight: '1.2',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}>
                     <Link
                       to={post.fields.slug}
                       style={{
                         textDecoration: 'none',
                         color: '#2d2823',
-                        fontSize: '24px'
+                        fontSize: '20px', // 24px에서 20px로 한단계 작게
+                        lineHeight: '1.2',
+                        display: 'flex',
+                        alignItems: 'center'
                       }}
                     >
                       {title}
                     </Link>
                   </h2>
-                  <small style={{ color: '#666' }}>{post.frontmatter.date}</small>
-                </header>
-                <section>
+                  
+                  {/* 설명 섹션 */}
                   <p
                     style={{
-                      marginTop: '15px',
+                      margin: 0,
                       lineHeight: '1.6',
                       color: '#4a453e'
                     }}
@@ -199,7 +182,46 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
                       __html: post.frontmatter.description || post.excerpt,
                     }}
                   />
-                </section>
+                  
+                  {/* 업로드일 + 조회수 */}
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'flex-start',
+                    gap: '8px',
+                    flexWrap: 'nowrap'
+                  }}
+                  className="card-meta-container"
+                  >
+                    {/* 업로드일 */}
+                    <span style={{
+                      color: '#666',
+                      fontSize: '14px',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0
+                    }}>
+                      {post.frontmatter.date.replace(/년|월|일/g, '').replace(/\s+/g, '').replace(/(\d{4})(\d{2})(\d{2})/, '$1.$2.$3')}
+                    </span>
+                    
+                    {/* 구분선 */}
+                    <div style={{
+                      width: '1px',
+                      height: '12px',
+                      background: '#d4cfc4',
+                      flexShrink: 0
+                    }}></div>
+                    
+                    {/* 조회수 */}
+                    <span style={{
+                      color: '#666',
+                      fontSize: '14px',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0
+                    }}>
+                      <ViewCounter slug={post.fields.slug} />
+                    </span>
+                  </div>
+                </div>
               </article>
             )
           })}
@@ -228,6 +250,37 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
           </div>
         )}
       </main>
+      
+      {/* 반응형 스타일 */}
+      <style>
+        {`
+          @media (max-width: 768px) {
+            /* 카드 내부 요소들 모바일 최적화 */
+            .card-meta-container {
+              gap: 12px !important;
+              flex-wrap: wrap !important;
+            }
+            
+            .card-meta-container > div {
+              font-size: 12px !important;
+            }
+            
+            .card-meta-container svg {
+              width: 12px !important;
+              height: 12px !important;
+            }
+          }
+          
+          @media (max-width: 480px) {
+            /* 매우 작은 화면에서 추가 최적화 */
+            .card-meta-container {
+              flex-direction: column !important;
+              align-items: flex-start !important;
+              gap: 8px !important;
+            }
+          }
+        `}
+      </style>
     </Layout>
   )
 }

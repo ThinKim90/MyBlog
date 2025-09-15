@@ -1,6 +1,7 @@
 import React from "react"
 import { graphql, Link } from "gatsby"
 import Layout from "../components/Layout"
+import ViewCounter from "../components/ViewCounter"
 
 interface BlogPostTemplateProps {
   data: {
@@ -68,9 +69,12 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
         <h1 style={{ marginBottom: '10px', color: '#333' }}>
           {post.frontmatter.title}
         </h1>
-        <p style={{ color: '#666', fontSize: '16px' }}>
-          {post.frontmatter.date}
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '10px' }}>
+          <p style={{ color: '#666', fontSize: '16px', margin: 0 }}>
+            {post.frontmatter.date}
+          </p>
+          <ViewCounter slug={post.id} />
+        </div>
       </header>
 
       <article>

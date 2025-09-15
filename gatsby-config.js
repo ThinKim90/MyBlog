@@ -79,6 +79,25 @@ module.exports = {
               publisherId: `ca-pub-2944637253847543`,
           },
       },
+      {
+        resolve: `gatsby-plugin-google-gtag`,
+        options: {
+          // Google Analytics 4 측정 ID를 여기에 입력하세요
+          trackingIds: [
+            "G-VRP0Q2EFL6", // 실제 GA4 측정 ID
+          ],
+          // 페이지뷰 자동 추적 활성화
+          gtagConfig: {
+            anonymize_ip: true,
+            cookie_expires: 0,
+          },
+          // 개발 환경에서도 추적 (선택사항)
+          pluginConfig: {
+            head: true,
+            respectDNT: true,
+          },
+        },
+      },
     // this (optional) plugin enables Progressive Web App + Offline functionality
     // To learn more, visit: https://gatsby.dev/offline
     // `gatsby-plugin-offline`,
