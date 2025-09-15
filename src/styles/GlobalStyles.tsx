@@ -298,6 +298,49 @@ export const GlobalStyles: React.FC = () => {
       background: rgba(166, 150, 136, 0.1);
     }
 
+    /* 블로그 포스트 내 마크다운 헤딩 크기 조정 */
+    article .blog-post-content h1,
+    div.blog-post-content h1 {
+      font-size: 2rem !important; /* 32px - 기존 48px에서 줄임 */
+      margin-top: 2rem !important;
+      margin-bottom: 1rem !important;
+    }
+    
+    article .blog-post-content h2,
+    div.blog-post-content h2 {
+      font-size: 1.5rem !important; /* 24px - 기존 36px에서 줄임 */
+      margin-top: 1.5rem !important;
+      margin-bottom: 0.75rem !important;
+    }
+    
+    article .blog-post-content h3,
+    div.blog-post-content h3 {
+      font-size: 1.25rem !important; /* 20px - 기존 30px에서 줄임 */
+      margin-top: 1.25rem !important;
+      margin-bottom: 0.5rem !important;
+    }
+    
+    article .blog-post-content h4,
+    div.blog-post-content h4 {
+      font-size: 1.125rem !important; /* 18px - 기존 24px에서 줄임 */
+      margin-top: 1rem !important;
+      margin-bottom: 0.5rem !important;
+    }
+    
+    article .blog-post-content h5,
+    div.blog-post-content h5 {
+      font-size: 1rem !important; /* 16px - 기존 20px에서 줄임 */
+      margin-top: 0.75rem !important;
+      margin-bottom: 0.25rem !important;
+    }
+    
+    article .blog-post-content h6,
+    div.blog-post-content h6 {
+      font-size: 0.875rem !important; /* 14px - 기존 18px에서 줄임 */
+      margin-top: 0.75rem !important;
+      margin-bottom: 0.25rem !important;
+    }
+
     /* 반응형 스타일 */
     @media (max-width: ${theme.breakpoints.sm}) {
       html {
@@ -314,6 +357,74 @@ export const GlobalStyles: React.FC = () => {
       
       h3 {
         font-size: ${theme.text.h4.fontSize};
+      }
+      
+      /* 모바일에서 리스트와 코드 블록 크기 조정 */
+      li {
+        font-size: 14px !important;
+      }
+      
+      pre {
+        font-size: 12px !important;
+      }
+      
+      code {
+        font-size: 12px !important;
+      }
+      
+      p code,
+      li code {
+        font-size: 12px !important;
+      }
+      
+      /* 반응형에서도 블로그 포스트 헤딩 조정 */
+      article .blog-post-content h1,
+      div.blog-post-content h1 {
+        font-size: 1.5rem !important; /* 모바일에서 더 작게 */
+      }
+      
+      article .blog-post-content h2,
+      div.blog-post-content h2 {
+        font-size: 1.25rem !important;
+      }
+      
+      article .blog-post-content h3,
+      div.blog-post-content h3 {
+        font-size: 1.125rem !important;
+      }
+    }
+
+    /* 작은 모바일 화면 (480px 이하) */
+    @media (max-width: 480px) {
+      /* 블로그 포스트 헤딩 더 작게 조정 */
+      article .blog-post-content h1,
+      div.blog-post-content h1 {
+        font-size: 1.25rem !important; /* 20px - 상단 타이틀과 동일 */
+      }
+      
+      article .blog-post-content h2,
+      div.blog-post-content h2 {
+        font-size: 1.125rem !important; /* 18px */
+      }
+      
+      article .blog-post-content h3,
+      div.blog-post-content h3 {
+        font-size: 1rem !important; /* 16px */
+      }
+      
+      article .blog-post-content h4,
+      div.blog-post-content h4 {
+        font-size: 0.875rem !important; /* 14px */
+      }
+      
+      article .blog-post-content h5,
+      div.blog-post-content h5 {
+        font-size: 0.875rem !important; /* 14px */
+      }
+      
+      article .blog-post-content h6,
+      div.blog-post-content h6 {
+        font-size: 0.75rem !important; /* 12px */
       }
     }
 

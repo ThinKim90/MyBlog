@@ -12,8 +12,7 @@ declare global {
 }
 
 const ViewCounter: React.FC<ViewCounterProps> = ({ slug, className }) => {
-  const [viewCount, setViewCount] = useState<number | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [viewCount, setViewCount] = useState<number>(0)
 
   useEffect(() => {
     // 페이지 로드 시 조회수 추적
@@ -57,35 +56,19 @@ const ViewCounter: React.FC<ViewCounterProps> = ({ slug, className }) => {
       } catch (error) {
         console.error('조회수 추적 오류:', error)
         setViewCount(0)
-      } finally {
-        setIsLoading(false)
       }
     }
 
     fetchViewCount()
   }, [slug])
 
-  if (isLoading) {
-    return (
-      <div className={className} style={{ 
-        color: '#666', 
-        fontSize: '14px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '4px'
-      }}>
-        <span>👁️</span>
-        <span>조회수 로딩중...</span>
-      </div>
-    )
-  }
-
   return (
     <span className={className} style={{ 
       color: '#666', 
-      fontSize: '14px'
+      fontSize: '12px',
+      fontWeight: '400'
     }}>
-      {viewCount?.toLocaleString()} view
+      {viewCount.toLocaleString()} view
     </span>
   )
 }

@@ -51,28 +51,65 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
       description={post.frontmatter.description || post.excerpt}
     >
       
-      <header style={{ marginBottom: '40px' }}>
-        <div style={{ marginBottom: '15px' }}>
-          <span style={{
-            display: 'inline-block',
-            padding: '4px 8px',
-            backgroundColor: '#f0ede6',
-            color: '#4a453e',
-            borderRadius: '12px',
-            fontSize: '12px',
-            fontWeight: '500'
-          }}>
-            {post.frontmatter.category}
-          </span>
-        </div>
+      {/* 통합된 헤더 레이아웃 */}
+      <header style={{ 
+        marginBottom: '40px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px'
+      }}>
+        {/* 카테고리 - 인라인으로 변경 */}
+        <span style={{
+          display: 'inline-block',
+          padding: '4px 8px',
+          backgroundColor: '#f0ede6',
+          color: '#4a453e',
+          borderRadius: '12px',
+          fontSize: '12px',
+          fontWeight: '500',
+          width: 'fit-content'
+        }}>
+          {post.frontmatter.category}
+        </span>
         
-        <h1 style={{ marginBottom: '10px', color: '#333' }}>
+        {/* 제목 */}
+        <h1 style={{ 
+          margin: 0,
+          color: '#333',
+          fontSize: '2rem',
+          fontWeight: '600',
+          lineHeight: '1.2'
+        }}>
           {post.frontmatter.title}
         </h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '10px' }}>
-          <p style={{ color: '#666', fontSize: '16px', margin: 0 }}>
-            {post.frontmatter.date}
+        
+        {/* Description - 더 큰 폰트 */}
+        {(post.frontmatter.description || post.excerpt) && (
+          <p style={{ 
+            color: '#4a453e', 
+            fontSize: '18px', 
+            lineHeight: '1.6',
+            margin: 0,
+            fontWeight: '400'
+          }}>
+            {post.frontmatter.description || post.excerpt}
           </p>
+        )}
+        
+        {/* 작성일과 조회수 - 더 작은 폰트 */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '16px',
+          flexWrap: 'wrap'
+        }}>
+          <span style={{ 
+            color: '#666', 
+            fontSize: '14px',
+            fontWeight: '400'
+          }}>
+            {post.frontmatter.date}
+          </span>
           <ViewCounter slug={post.id} />
         </div>
       </header>
@@ -85,6 +122,7 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
             fontSize: '18px',
             color: '#333'
           }}
+          className="blog-post-content"
         />
       </article>
 
@@ -185,6 +223,82 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
           블로그 홈으로 돌아가기
         </Link>
       </div>
+
+      {/* 모바일 반응형 스타일 */}
+      <style>
+        {`
+          @media (max-width: 768px) {
+            /* 헤더 제목 크기 조정 */
+            header h1 {
+              font-size: 1.5rem !important; /* 24px */
+              line-height: 1.3 !important;
+            }
+            
+            /* Description 크기 조정 */
+            header p {
+              font-size: 16px !important;
+              line-height: 1.5 !important;
+            }
+            
+            /* 작성일과 조회수 레이아웃 조정 */
+            header > div:last-child {
+              flex-direction: column !important;
+              align-items: flex-start !important;
+              gap: 4px !important;
+            }
+            
+            /* 블로그 포스트 본문 크기 조정 */
+            .blog-post-content {
+              font-size: 16px !important;
+            }
+            
+            /* 네비게이션 모바일 최적화 */
+            nav ul {
+              flex-direction: column !important;
+              gap: 16px !important;
+            }
+            
+            nav li {
+              flex: none !important;
+              text-align: left !important;
+            }
+            
+            nav li:last-child {
+              text-align: left !important;
+            }
+            
+            nav li:last-child a {
+              justify-content: flex-start !important;
+            }
+            
+            nav li:last-child a > div {
+              text-align: left !important;
+            }
+          }
+          
+          @media (max-width: 480px) {
+            /* 매우 작은 화면에서 추가 조정 */
+            header h1 {
+              font-size: 1.25rem !important; /* 20px */
+            }
+            
+            header p {
+              font-size: 14px !important;
+            }
+            
+            /* 블로그 포스트 본문 더 작게 */
+            .blog-post-content {
+              font-size: 14px !important;
+            }
+            
+            /* 홈 버튼 크기 조정 */
+            div[style*="textAlign: center"] a {
+              font-size: 14px !important;
+              padding: 8px 16px !important;
+            }
+          }
+        `}
+      </style>
     </Layout>
   )
 }
@@ -230,4 +344,4 @@ export const pageQuery = graphql`
       }
     }
   }
-` 
+`

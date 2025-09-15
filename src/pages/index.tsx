@@ -255,14 +255,14 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
       <style>
         {`
           @media (max-width: 768px) {
-            /* 카드 내부 요소들 모바일 최적화 */
+            /* 카드 내부 요소들 모바일 최적화 - 한 줄로 유지 */
             .card-meta-container {
-              gap: 12px !important;
-              flex-wrap: wrap !important;
+              gap: 8px !important;
+              flex-wrap: nowrap !important;
             }
             
-            .card-meta-container > div {
-              font-size: 12px !important;
+            .card-meta-container span {
+              font-size: 13px !important;
             }
             
             .card-meta-container svg {
@@ -272,11 +272,17 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
           }
           
           @media (max-width: 480px) {
-            /* 매우 작은 화면에서 추가 최적화 */
+            /* 매우 작은 화면에서도 한 줄로 유지 */
             .card-meta-container {
-              flex-direction: column !important;
-              align-items: flex-start !important;
+              flex-direction: row !important;
+              align-items: center !important;
               gap: 8px !important;
+              flex-wrap: nowrap !important;
+            }
+            
+            /* 텍스트 크기 조정 */
+            .card-meta-container span {
+              font-size: 12px !important;
             }
           }
         `}
