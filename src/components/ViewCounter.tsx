@@ -6,7 +6,7 @@ interface ViewCounterProps {
 }
 
 const ViewCounter: React.FC<ViewCounterProps> = ({ slug, className }) => {
-  const [viewCount, setViewCount] = useState<number>(0)
+  const [viewCount, setViewCount] = useState<number | null>(null)
 
   useEffect(() => {
     // Netlify Functions를 통해 GoatCounter API 호출
@@ -25,13 +25,10 @@ const ViewCounter: React.FC<ViewCounterProps> = ({ slug, className }) => {
           const data = await response.json()
           console.log('ViewCounter: API 응답 데이터', data)
           
-          if (data.success) {
-            setViewCount(data.viewCount)
-            console.log('ViewCounter: 조회수 설정 완료', { viewCount: data.viewCount })
-          } else {
-            console.error('ViewCounter: API 오류:', data.error)
-            setViewCount(0)
-          }
+          // GoatCounter API 응답에서 조회수 추출 (pass-through 방식)
+          const count = parseInt(data.count) || 0
+          setViewCount(count)
+          console.log('ViewCounter: 조회수 설정 완료', { viewCount: count })
         } else {
           const errorText = await response.text()
           console.error('ViewCounter: API 호출 실패:', { 
@@ -50,13 +47,14 @@ const ViewCounter: React.FC<ViewCounterProps> = ({ slug, className }) => {
     fetchViewCount()
   }, [slug])
 
+  // 서버/클라 첫 렌더 마크업 동일: placeholder 유지 (Hydration 에러 방지)
   return (
     <span className={className} style={{ 
       color: '#666', 
       fontSize: '12px',
       fontWeight: '400'
-    }}>
-      {viewCount.toLocaleString()} view
+    }} aria-label="views">
+      {viewCount !== null ? viewCount.toLocaleString() : '…'} view
     </span>
   )
 }
