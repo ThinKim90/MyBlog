@@ -33,8 +33,8 @@ exports.handler = async (event, context) => {
 
     console.log('GoatCounter 조회수 요청:', { pagePath });
 
-    // GoatCounter API 호출
-    const goatCounterUrl = `https://thin.goatcounter.com/api/v0/count/${encodeURIComponent(pagePath)}`;
+    // GoatCounter API 호출 - 올바른 엔드포인트 사용
+    const goatCounterUrl = `https://thin.goatcounter.com/counter/${encodeURIComponent(pagePath)}.json`;
     const response = await fetch(goatCounterUrl);
     
     if (response.ok) {
