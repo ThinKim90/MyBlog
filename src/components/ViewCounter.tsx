@@ -6,55 +6,64 @@ interface ViewCounterProps {
 }
 
 const ViewCounter: React.FC<ViewCounterProps> = ({ slug, className }) => {
-  const [viewCount, setViewCount] = useState<number | null>(null)
+  const [mounted, setMounted] = useState(false)
+  const [count, setCount] = useState<string | null>(null)
+
+  // 1) SSR 단계에선 placeholder만 렌더 → hydration 안전
+  useEffect(() => setMounted(true), [])
 
   useEffect(() => {
-    // Netlify Functions를 통해 GoatCounter API 호출
-    const fetchViewCount = async () => {
+    if (!mounted) return
+
+    // GoatCounter가 정규화한 경로를 우선 사용
+    const path = (window as any).goatcounter?.get_data?.().p ?? window.location.pathname
+
+    ;(async () => {
       try {
-        // 페이지 경로 정리
-        const pagePath = slug.startsWith('/') ? slug : `/${slug}`
-        console.log('ViewCounter: 조회수 요청 시작', { slug, pagePath })
-        
-        // Netlify Functions API 호출 (CORS 문제 해결)
-        const response = await fetch(`/.netlify/functions/get-goatcounter-views?pathname=${encodeURIComponent(pagePath)}`)
-        
-        console.log('ViewCounter: API 응답 상태', { status: response.status, ok: response.ok })
-        
-        if (response.ok) {
-          const data = await response.json()
-          console.log('ViewCounter: API 응답 데이터', data)
-          
-          // GoatCounter API 응답에서 조회수 추출 (pass-through 방식)
-          const count = parseInt(data.count) || 0
-          setViewCount(count)
-          console.log('ViewCounter: 조회수 설정 완료', { viewCount: count })
-        } else {
-          const errorText = await response.text()
-          console.error('ViewCounter: API 호출 실패:', { 
-            status: response.status, 
-            statusText: response.statusText,
-            error: errorText 
-          })
-          setViewCount(0)
+        const r = await fetch(
+          `/.netlify/functions/get-goatcounter-views?pathname=${encodeURIComponent(path)}`
+        )
+        const text = await r.text()
+
+        // 중요: 상태코드와 무관하게 먼저 바디를 파싱
+        // (404면서도 {count:"0"}을 주는 경우가 있음)
+        let body: any = {}
+        try {
+          body = JSON.parse(text)
+        } catch {
+          body = {}
         }
-      } catch (error) {
-        console.error('ViewCounter: 조회수 추적 오류:', error)
-        setViewCount(0)
+
+        const val = body.viewCount ?? body.count ?? null
+
+        if (val != null) setCount(String(val))
+        else if (r.ok) setCount('0') // 200인데 값이 없으면 0으로
+        else setCount('0')           // 404 등도 0으로 표시 (실패로 취급하지 않음)
+      } catch {
+        setCount('—')                // 네트워크 에러 등만 실패 표시
       }
-    }
+    })()
+  }, [mounted])
 
-    fetchViewCount()
-  }, [slug])
-
-  // 서버/클라 첫 렌더 마크업 동일: placeholder 유지 (Hydration 에러 방지)
+  if (!mounted) {
+    return (
+      <span className={className} style={{ 
+        color: '#666', 
+        fontSize: '12px',
+        fontWeight: '400'
+      }} aria-label="views">
+        … view
+      </span>
+    )
+  }
+  
   return (
     <span className={className} style={{ 
       color: '#666', 
       fontSize: '12px',
       fontWeight: '400'
     }} aria-label="views">
-      {viewCount !== null ? viewCount.toLocaleString() : '…'} view
+      {count ?? '…'} view
     </span>
   )
 }
