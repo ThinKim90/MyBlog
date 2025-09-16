@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from "react"
 import { graphql, Link } from "gatsby"
 import Layout from "../components/Layout"
-import ViewCounter from "../components/ViewCounter"
+import BatchViewCounter from "../components/BatchViewCounter"
+import { useBatchViewCounts } from "../hooks/useBatchViewCounts"
 
 interface BlogIndexProps {
   data: {
@@ -31,6 +32,10 @@ interface BlogIndexProps {
 const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
   const siteDescription = data.site.siteMetadata?.description || ``
   const posts = data.allMarkdownRemark.nodes
+
+  // 모든 slug 추출하여 배치로 조회수 가져오기
+  const allSlugs = useMemo(() => posts.map(post => post.fields.slug), [posts])
+  const { viewCounts } = useBatchViewCounts(allSlugs)
 
   // 모든 카테고리 추출 (전체를 첫 번째로)
   const categories = useMemo(() => {
@@ -218,7 +223,10 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
                       whiteSpace: 'nowrap',
                       flexShrink: 0
                     }}>
-                      <ViewCounter slug={post.fields.slug} />
+                      <BatchViewCounter 
+                        slug={post.fields.slug} 
+                        viewCounts={viewCounts}
+                      />
                     </span>
                   </div>
                 </div>
