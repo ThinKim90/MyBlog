@@ -3,7 +3,7 @@ import { graphql, Link } from "gatsby"
 import Layout from "../components/Layout"
 import BatchViewCounter from "../components/BatchViewCounter"
 import GiscusComments from "../components/GiscusComments"
-import { useBatchViewCounts } from "../hooks/useBatchViewCounts"
+import { useCachedViewCounts } from "../hooks/useCachedViewCounts"
 
 interface BlogPostTemplateProps {
   data: {
@@ -49,8 +49,8 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
   const post = data.markdownRemark
   const { previous, next } = data
 
-  // 현재 포스트의 조회수만 가져오기
-  const { viewCounts } = useBatchViewCounts([post.fields.slug])
+  // 현재 포스트의 캐시된 조회수 가져오기
+  const { viewCounts } = useCachedViewCounts([post.fields.slug])
 
   return (
     <Layout 
