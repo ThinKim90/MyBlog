@@ -5,56 +5,44 @@ interface ViewCounterProps {
   className?: string
 }
 
-declare global {
-  interface Window {
-    gtag: (command: string, targetId: string, config?: any) => void
-  }
-}
-
 const ViewCounter: React.FC<ViewCounterProps> = ({ slug, className }) => {
   const [viewCount, setViewCount] = useState<number>(0)
 
   useEffect(() => {
-    // 페이지 로드 시 조회수 추적
-    const trackPageView = () => {
-      if (typeof window !== 'undefined' && window.gtag) {
-        window.gtag('config', 'G-VRP0Q2EFL6', {
-          page_title: document.title,
-          page_location: window.location.href,
-          custom_map: {
-            'custom_parameter_1': slug
-          }
-        })
-      }
-    }
-
-    // GA4 API에서 실제 조회수 가져오기
+    // Netlify Functions를 통해 GoatCounter API 호출
     const fetchViewCount = async () => {
       try {
-        // 현재 페이지 경로 생성
+        // 페이지 경로 정리
         const pagePath = slug.startsWith('/') ? slug : `/${slug}`
+        console.log('ViewCounter: 조회수 요청 시작', { slug, pagePath })
         
-        // Netlify Functions API 호출
-        const response = await fetch(`/.netlify/functions/get-page-views?pathname=${encodeURIComponent(pagePath)}`)
+        // Netlify Functions API 호출 (CORS 문제 해결)
+        const response = await fetch(`/.netlify/functions/get-goatcounter-views?pathname=${encodeURIComponent(pagePath)}`)
+        
+        console.log('ViewCounter: API 응답 상태', { status: response.status, ok: response.ok })
         
         if (response.ok) {
           const data = await response.json()
+          console.log('ViewCounter: API 응답 데이터', data)
+          
           if (data.success) {
-            setViewCount(data.pageViews)
+            setViewCount(data.viewCount)
+            console.log('ViewCounter: 조회수 설정 완료', { viewCount: data.viewCount })
           } else {
-            console.error('GA4 API 오류:', data.error)
-            // 오류 시 기본값 설정
+            console.error('ViewCounter: API 오류:', data.error)
             setViewCount(0)
           }
         } else {
-          console.error('API 호출 실패:', response.status)
+          const errorText = await response.text()
+          console.error('ViewCounter: API 호출 실패:', { 
+            status: response.status, 
+            statusText: response.statusText,
+            error: errorText 
+          })
           setViewCount(0)
         }
-        
-        // 페이지뷰 추적 (GA4에 데이터 전송)
-        trackPageView()
       } catch (error) {
-        console.error('조회수 추적 오류:', error)
+        console.error('ViewCounter: 조회수 추적 오류:', error)
         setViewCount(0)
       }
     }

@@ -2,6 +2,7 @@ import React from "react"
 import { graphql, Link } from "gatsby"
 import Layout from "../components/Layout"
 import ViewCounter from "../components/ViewCounter"
+import GiscusComments from "../components/GiscusComments"
 
 interface BlogPostTemplateProps {
   data: {
@@ -12,6 +13,9 @@ interface BlogPostTemplateProps {
     }
     markdownRemark: {
       id: string
+      fields: {
+        slug: string
+      }
       excerpt: string
       html: string
       frontmatter: {
@@ -42,7 +46,6 @@ interface BlogPostTemplateProps {
 
 const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
   const post = data.markdownRemark
-  const siteTitle = data.site.siteMetadata?.title || `Title`
   const { previous, next } = data
 
   return (
@@ -110,7 +113,7 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
           }}>
             {post.frontmatter.date}
           </span>
-          <ViewCounter slug={post.id} />
+          <ViewCounter slug={post.fields.slug} />
         </div>
       </header>
 
@@ -127,6 +130,14 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
       </article>
 
       <hr style={{ margin: '40px 0', border: 'none', borderTop: '1px solid #eee' }} />
+      
+      {/* 댓글 영역 */}
+      <GiscusComments
+        repo="ThinKim90/MyBlog"
+        repoId="R_kgDOO3u4Jw"
+        category="Announcements"
+        categoryId="DIC_kwDOO3u4J84CvfJN"
+      />
       
       <nav>
         <ul style={{
@@ -318,6 +329,9 @@ export const pageQuery = graphql`
     }
     markdownRemark(id: { eq: $id }) {
       id
+      fields {
+        slug
+      }
       excerpt(pruneLength: 160)
       html
       frontmatter {
