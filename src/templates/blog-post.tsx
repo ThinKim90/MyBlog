@@ -52,6 +52,16 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
   // 현재 포스트의 캐시된 조회수 가져오기
   const { viewCounts } = useCachedViewCounts([post.fields.slug])
 
+  // 날짜 포맷팅 함수
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
   return (
     <Layout 
       title={post.frontmatter.title}
@@ -115,7 +125,7 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
             fontSize: '14px',
             fontWeight: '400'
           }}>
-            {post.frontmatter.date}
+            {formatDate(post.frontmatter.date)}
           </span>
           <BatchViewCounter 
             slug={post.fields.slug} 
@@ -224,7 +234,7 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
           display: 'inline-flex',
           alignItems: 'center',
           padding: '10px 20px',
-          border: '2px solid #8b7d6b',
+          border: '2px solid #e8e4db',
           borderRadius: '25px',
           transition: 'all 0.2s ease'
         }}
@@ -245,6 +255,14 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
       {/* 모바일 반응형 스타일 */}
       <style>
         {`
+          /* 블로그 포스트 콘텐츠 내 li 요소 스타일 통일 */
+          .blog-post-content li {
+            font-size: 16px !important;
+            line-height: 1.6 !important;
+            color: #333 !important;
+            margin-bottom: 8px !important;
+          }
+          
           @media (max-width: 768px) {
             /* 헤더 제목 크기 조정 */
             header h1 {
@@ -267,6 +285,11 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
             
             /* 블로그 포스트 본문 크기 조정 */
             .blog-post-content {
+              font-size: 16px !important;
+            }
+            
+            /* 블로그 포스트 콘텐츠 내 li 요소 모바일 크기 조정 */
+            .blog-post-content li {
               font-size: 16px !important;
             }
             
@@ -309,6 +332,11 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
               font-size: 14px !important;
             }
             
+            /* 블로그 포스트 콘텐츠 내 li 요소 작은 화면 크기 조정 */
+            .blog-post-content li {
+              font-size: 14px !important;
+            }
+            
             /* 홈 버튼 크기 조정 */
             div[style*="textAlign: center"] a {
               font-size: 14px !important;
@@ -343,7 +371,7 @@ export const pageQuery = graphql`
       html
       frontmatter {
         title
-        date(formatString: "YYYY년 MM월 DD일")
+        date
         description
         category
       }

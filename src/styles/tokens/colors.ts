@@ -65,9 +65,9 @@ export const colors = {
 
   // 기존 색상들과의 호환성을 위한 별칭
   background: {
-    primary: '#f8f6f0',    // primary.50
-    secondary: '#e8e4db',  // primary.200
-    accent: '#d4cfc4',     // primary.300
+    primary: '#faf9f6',    // 더 밝은 베이지
+    secondary: '#f0ede6',  // primary.100
+    accent: '#e8e4db',     // primary.200
   },
   
   text: {

@@ -33,6 +33,16 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
   const siteDescription = data.site.siteMetadata?.description || ``
   const posts = data.allMarkdownRemark.nodes
 
+  // 날짜 포맷팅 함수
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/\./g, '.').replace(/\s/g, '')
+  }
+
   // 모든 slug 추출하여 캐시된 조회수 가져오기
   const allSlugs = useMemo(() => posts.map(post => post.fields.slug), [posts])
   const { viewCounts } = useCachedViewCounts(allSlugs)
@@ -205,7 +215,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
                       whiteSpace: 'nowrap',
                       flexShrink: 0
                     }}>
-                      {post.frontmatter.date.replace(/년|월|일/g, '').replace(/\s+/g, '').replace(/(\d{4})(\d{2})(\d{2})/, '$1.$2.$3')}
+                      {formatDate(post.frontmatter.date)}
                     </span>
                     
                     {/* 구분선 */}
@@ -316,7 +326,7 @@ export const pageQuery = graphql`
           slug
         }
         frontmatter {
-          date(formatString: "YYYY년 MM월 DD일")
+          date
           title
           description
           category

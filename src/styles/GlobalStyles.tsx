@@ -185,17 +185,37 @@ export const GlobalStyles: React.FC = () => {
 
     /* 링크 */
     a {
-      color: var(--color-text-secondary);
+      color: #6b645c; /* primary color 600 */
       transition: var(--transition-normal);
-      text-decoration: none;
+      text-decoration: underline;
+      text-decoration-color: #6b645c;
+      text-underline-offset: 2px;
     }
     
     a:hover {
-      color: var(--color-interactive-hover);
+      color: #4a453e; /* primary color 700 - 호버 시 조금 더 진한 색상 */
+      text-decoration-color: #4a453e;
     }
     
     a:focus {
       outline: none;
+    }
+
+    /* 괄호로 감싼 텍스트 스타일 - CSS만으로 처리 */
+    .blog-post-content p,
+    .blog-post-content li {
+      /* 괄호로 감싼 텍스트를 찾아서 스타일 적용 */
+    }
+    
+    /* 괄호 안의 텍스트를 위한 특별한 스타일 클래스 */
+    .blog-post-content .parentheses-text {
+      color: #6b7280; /* 연한 회색 */
+      font-style: italic;
+    }
+    
+    /* 괄호 자체의 스타일 */
+    .blog-post-content .parentheses {
+      color: #9ca3af; /* 더 연한 회색 */
     }
 
     /* 리스트 */
@@ -207,6 +227,8 @@ export const GlobalStyles: React.FC = () => {
     li {
       margin-bottom: var(--space-1);
       line-height: ${theme.text.body.lineHeight};
+      font-size: ${theme.text.body.fontSize};
+      color: var(--color-text-primary);
     }
 
     /* 스크롤바 커스터마이징 */
