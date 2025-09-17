@@ -7,6 +7,34 @@
 // You can delete this file if you're not using it
 
 const path = require('path');
+const { createFilePath } = require('gatsby-source-filesystem');
+const {
+  canonicalise,
+  stripTrailingSlash,
+  toAnalyticsKey,
+  normaliseExplicitSlug,
+  normaliseLegacyPath,
+} = require('./utils/path-helpers');
+
+exports.createSchemaCustomization = ({ actions }) => {
+  const { createTypes } = actions;
+  createTypes(`
+    type MarkdownRemarkFields {
+      slug: String!
+      slugNoTrailingSlash: String!
+      analyticsKey: String!
+      redirects: [String!]!
+    }
+
+    type MarkdownRemarkFrontmatter {
+      slug: String
+      aliases: [String]
+      redirect_from: [String]
+      redirectFrom: [String]
+      oldSlugs: [String]
+    }
+  `);
+};
 
 // Setup Import Alias
 exports.onCreateWebpackConfig = ({ getConfig, actions }) => {
@@ -26,7 +54,7 @@ exports.onCreateWebpackConfig = ({ getConfig, actions }) => {
 
 // Create blog post pages dynamically
 exports.createPages = async ({ graphql, actions, reporter }) => {
-  const { createPage } = actions;
+  const { createPage, createRedirect } = actions;
 
   // Define a template for blog post
   const blogPostTemplate = path.resolve(`./src/templates/blog-post.tsx`);
@@ -43,6 +71,9 @@ exports.createPages = async ({ graphql, actions, reporter }) => {
             id
             fields {
               slug
+              slugNoTrailingSlash
+              analyticsKey
+              redirects
             }
           }
         }
@@ -66,15 +97,31 @@ exports.createPages = async ({ graphql, actions, reporter }) => {
       const previousPostId = index === 0 ? null : posts[index - 1].id;
       const nextPostId = index === posts.length - 1 ? null : posts[index + 1].id;
 
+      const { slug, slugNoTrailingSlash, analyticsKey, redirects = [] } = post.fields;
+
       createPage({
-        path: post.fields.slug,
+        path: slug,
         component: blogPostTemplate,
         context: {
           id: post.id,
+          slug,
+          slugNoTrailingSlash,
+          analyticsKey,
           previousPostId,
           nextPostId,
         },
       });
+
+      redirects
+        .filter((fromPath) => fromPath && fromPath !== slug)
+        .forEach((fromPath) => {
+          createRedirect({
+            fromPath,
+            toPath: slug,
+            isPermanent: true,
+            redirectInBrowser: true,
+          });
+        });
     });
   }
 };
@@ -84,13 +131,57 @@ exports.onCreateNode = ({ node, actions, getNode }) => {
   const { createNodeField } = actions;
 
   if (node.internal.type === `MarkdownRemark`) {
-    const fileNode = getNode(node.parent);
-    const slug = `/${fileNode.name}/`;
+    const filePath = createFilePath({ node, getNode, basePath: 'contents', trailingSlash: true });
+    const fileSlug = canonicalise(filePath);
+
+    const frontmatterSlugRaw = node.frontmatter?.slug;
+    const explicitSlug = frontmatterSlugRaw ? normaliseExplicitSlug(frontmatterSlugRaw) : null;
+    const canonicalSlug = explicitSlug || fileSlug;
+
+    const redirectSet = new Set();
+    if (fileSlug && fileSlug !== canonicalSlug) {
+      redirectSet.add(fileSlug);
+    }
+
+    const aliasFields = [
+      node.frontmatter?.aliases,
+      node.frontmatter?.redirect_from,
+      node.frontmatter?.redirectFrom,
+      node.frontmatter?.oldSlugs,
+    ];
+
+    aliasFields
+      .flat()
+      .filter(Boolean)
+      .forEach((value) => {
+        const normalised = normaliseLegacyPath(value);
+        if (normalised && normalised !== canonicalSlug) {
+          redirectSet.add(normalised);
+        }
+      });
 
     createNodeField({
-      name: `slug`,
+      name: 'slug',
       node,
-      value: slug,
+      value: canonicalSlug,
+    });
+
+    createNodeField({
+      name: 'slugNoTrailingSlash',
+      node,
+      value: stripTrailingSlash(canonicalSlug),
+    });
+
+    createNodeField({
+      name: 'analyticsKey',
+      node,
+      value: toAnalyticsKey(canonicalSlug),
+    });
+
+    createNodeField({
+      name: 'redirects',
+      node,
+      value: Array.from(redirectSet),
     });
   }
 };

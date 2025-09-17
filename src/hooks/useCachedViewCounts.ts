@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { bundleSlug, type SlugBundle } from 'utils/slug'
 
 export interface ViewCountEntry {
   total: number
@@ -19,6 +20,27 @@ let memoryCache: ViewCountMap = {}
 const inFlight = new Map<string, Promise<ViewCountMap>>()
 
 const now = () => Date.now()
+
+type PreparedSlug = SlugBundle
+
+const prepareSlugBundles = (input: string[]): PreparedSlug[] => {
+  const map = new Map<string, PreparedSlug>()
+  input
+    .filter(Boolean)
+    .forEach((value) => {
+      const bundle = bundleSlug(value)
+      if (!map.has(bundle.withoutTrailingSlash)) {
+        map.set(bundle.withoutTrailingSlash, bundle)
+      }
+    })
+  return Array.from(map.values())
+}
+
+const extractKeys = (bundles: PreparedSlug[]) =>
+  bundles.map((bundle) => bundle.withoutTrailingSlash)
+
+const extractAnalyticsKeys = (bundles: PreparedSlug[]) =>
+  Array.from(new Set(bundles.map((bundle) => bundle.analyticsKey)))
 
 const isEntryFresh = (entry?: ViewCountEntry) => {
   if (!entry) return false
@@ -94,13 +116,20 @@ const mergeIntoCache = (counts: ViewCountMap) => {
   }
 }
 
-const parseServerCounts = (slugs: string[], payload: any): ViewCountMap => {
+const parseServerCounts = (bundles: PreparedSlug[], payload: any): ViewCountMap => {
   const nowTs = now()
   const result: ViewCountMap = {}
   const counts = payload?.counts ?? payload ?? {}
 
-  slugs.forEach((slug) => {
-    const record = counts[slug] ?? counts[slug.replace(/^\/+/, '')] ?? {}
+  bundles.forEach((bundle) => {
+    const { withoutTrailingSlash, analyticsKey, canonical } = bundle
+    const record =
+      counts[analyticsKey] ??
+      counts[withoutTrailingSlash] ??
+      counts[withoutTrailingSlash.replace(/^\/+/, '')] ??
+      counts[canonical] ??
+      counts[canonical.replace(/^\/+/, '')] ??
+      {}
     const total = Number.parseInt(
       record.total ?? record.count ?? record.views ?? record.count_unique ?? '0',
       10,
@@ -110,10 +139,11 @@ const parseServerCounts = (slugs: string[], payload: any): ViewCountMap => {
       10,
     ) || 0
 
-    result[slug] = {
+    result[withoutTrailingSlash] = {
       total,
       unique,
-      resolvedPath: record.resolved || slug,
+      resolvedPath:
+        record.resolved || record.key || analyticsKey || withoutTrailingSlash,
       fetchedAt: nowTs,
     }
   })
@@ -121,13 +151,13 @@ const parseServerCounts = (slugs: string[], payload: any): ViewCountMap => {
   return result
 }
 
-const requestCounts = (slugs: string[]): Promise<ViewCountMap> => {
-  if (!isBrowser || slugs.length === 0) {
+const requestCounts = (bundles: PreparedSlug[]): Promise<ViewCountMap> => {
+  if (!isBrowser || bundles.length === 0) {
     return Promise.resolve({})
   }
 
-  const uniqueSlugs = Array.from(new Set(slugs))
-  const requestKey = uniqueSlugs.slice().sort().join('|')
+  const analyticsKeys = extractAnalyticsKeys(bundles)
+  const requestKey = analyticsKeys.slice().sort().join('|')
 
   const existing = inFlight.get(requestKey)
   if (existing) {
@@ -135,7 +165,7 @@ const requestCounts = (slugs: string[]): Promise<ViewCountMap> => {
   }
 
   const params = new URLSearchParams()
-  uniqueSlugs.forEach((slug) => params.append('paths', slug))
+  analyticsKeys.forEach((slug) => params.append('paths', slug))
 
   const promise = fetch(`/.netlify/functions/get-goatcounter-views?${params.toString()}`, {
     headers: {
@@ -147,7 +177,7 @@ const requestCounts = (slugs: string[]): Promise<ViewCountMap> => {
         throw new Error(`Failed to load view counts: ${response.status}`)
       }
       const payload = await response.json()
-      const parsed = parseServerCounts(uniqueSlugs, payload)
+      const parsed = parseServerCounts(bundles, payload)
       mergeIntoCache(parsed)
       return parsed
     })
@@ -164,30 +194,32 @@ const requestCounts = (slugs: string[]): Promise<ViewCountMap> => {
 }
 
 export const useCachedViewCounts = (inputSlugs: string[]) => {
-  const uniqueSlugs = useMemo(
-    () => Array.from(new Set(inputSlugs.filter(Boolean))),
+  const slugBundles = useMemo(
+    () => prepareSlugBundles(inputSlugs),
     [inputSlugs.join('|')],
   )
 
-  const [viewCounts, setViewCounts] = useState<ViewCountMap>(() => getSnapshotFor(uniqueSlugs))
-  const [loading, setLoading] = useState(() => needsRefresh(uniqueSlugs))
+  const slugKeys = useMemo(() => extractKeys(slugBundles), [slugBundles])
 
-  const key = useMemo(() => uniqueSlugs.join('|'), [uniqueSlugs])
+  const [viewCounts, setViewCounts] = useState<ViewCountMap>(() => getSnapshotFor(slugKeys))
+  const [loading, setLoading] = useState(() => needsRefresh(slugKeys))
 
-  useEffect(() => {
-    if (!isBrowser) return
-    setViewCounts(getSnapshotFor(uniqueSlugs))
-    setLoading(needsRefresh(uniqueSlugs))
-  }, [key, uniqueSlugs])
+  const key = useMemo(() => slugKeys.join('|'), [slugKeys])
 
   useEffect(() => {
     if (!isBrowser) return
-    if (uniqueSlugs.length === 0) {
+    setViewCounts(getSnapshotFor(slugKeys))
+    setLoading(needsRefresh(slugKeys))
+  }, [key, slugKeys])
+
+  useEffect(() => {
+    if (!isBrowser) return
+    if (slugKeys.length === 0) {
       setLoading(false)
       return
     }
 
-    if (!needsRefresh(uniqueSlugs)) {
+    if (!needsRefresh(slugKeys)) {
       setLoading(false)
       return
     }
@@ -195,7 +227,7 @@ export const useCachedViewCounts = (inputSlugs: string[]) => {
     let cancelled = false
     setLoading(true)
 
-    requestCounts(uniqueSlugs)
+    requestCounts(slugBundles)
       .then((counts) => {
         if (cancelled) return
         setViewCounts((prev) => ({ ...prev, ...counts }))
@@ -209,18 +241,18 @@ export const useCachedViewCounts = (inputSlugs: string[]) => {
     return () => {
       cancelled = true
     }
-  }, [key, uniqueSlugs])
+  }, [key, slugBundles, slugKeys])
 
   const refresh = useCallback(() => {
-    if (!isBrowser || uniqueSlugs.length === 0) {
+    if (!isBrowser || slugKeys.length === 0) {
       return Promise.resolve({} as ViewCountMap)
     }
 
-    return requestCounts(uniqueSlugs).then((counts) => {
+    return requestCounts(slugBundles).then((counts) => {
       setViewCounts((prev) => ({ ...prev, ...counts }))
       return counts
     })
-  }, [key, uniqueSlugs])
+  }, [slugBundles, slugKeys])
 
   return { viewCounts, loading, refresh }
 }

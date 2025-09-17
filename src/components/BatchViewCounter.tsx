@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+import { bundleSlug } from 'utils/slug'
 import type { ViewCountMap } from '../hooks/useCachedViewCounts'
 
 interface BatchViewCounterProps {
@@ -26,7 +27,8 @@ const BatchViewCounter: React.FC<BatchViewCounterProps> = ({
   viewCounts,
 }) => {
   const formatter = useMemo(() => new Intl.NumberFormat('ko-KR'), [])
-  const entry = viewCounts?.[slug]
+  const slugKey = useMemo(() => bundleSlug(slug).withoutTrailingSlash, [slug])
+  const entry = viewCounts?.[slugKey]
   const total = entry ? formatter.format(entry.total) : undefined
   const unique = entry ? formatter.format(entry.unique) : undefined
 

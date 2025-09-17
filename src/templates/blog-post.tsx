@@ -16,12 +16,15 @@ interface BlogPostTemplateProps {
       id: string
       fields: {
         slug: string
+        slugNoTrailingSlash: string
+        analyticsKey: string
       }
       excerpt: string
       html: string
       frontmatter: {
         title: string
         date: string
+        dateFormatted: string
         description?: string
         category: string
       }
@@ -51,16 +54,6 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
 
   // 현재 포스트의 캐시된 조회수 가져오기
   const { viewCounts } = useCachedViewCounts([post.fields.slug])
-
-  // 날짜 포맷팅 함수
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-  }
 
   return (
     <Layout 
@@ -125,7 +118,7 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
             fontSize: '14px',
             fontWeight: '400'
           }}>
-            {formatDate(post.frontmatter.date)}
+            {post.frontmatter.dateFormatted}
           </span>
           <BatchViewCounter 
             slug={post.fields.slug} 
@@ -154,6 +147,7 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
         repoId="R_kgDOO3u4Jw"
         category="Announcements"
         categoryId="DIC_kwDOO3u4J84CvfJN"
+        discussionTerm={post.fields.analyticsKey}
       />
       
       <nav>
@@ -366,12 +360,15 @@ export const pageQuery = graphql`
       id
       fields {
         slug
+        slugNoTrailingSlash
+        analyticsKey
       }
       excerpt(pruneLength: 160)
       html
       frontmatter {
         title
         date
+        dateFormatted: date(formatString: "YYYY년 M월 D일", locale: "ko")
         description
         category
       }

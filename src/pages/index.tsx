@@ -17,9 +17,12 @@ interface BlogIndexProps {
         excerpt: string
         fields: {
           slug: string
+          slugNoTrailingSlash: string
+          analyticsKey: string
         }
         frontmatter: {
           date: string
+          dateFormatted: string
           title: string
           description?: string
           category: string
@@ -32,16 +35,6 @@ interface BlogIndexProps {
 const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
   const siteDescription = data.site.siteMetadata?.description || ``
   const posts = data.allMarkdownRemark.nodes
-
-  // 날짜 포맷팅 함수
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).replace(/\./g, '.').replace(/\s/g, '')
-  }
 
   // 모든 slug 추출하여 캐시된 조회수 가져오기
   const allSlugs = useMemo(() => posts.map(post => post.fields.slug), [posts])
@@ -215,7 +208,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
                       whiteSpace: 'nowrap',
                       flexShrink: 0
                     }}>
-                      {formatDate(post.frontmatter.date)}
+                      {post.frontmatter.dateFormatted}
                     </span>
                     
                     {/* 구분선 */}
@@ -324,9 +317,12 @@ export const pageQuery = graphql`
         excerpt
         fields {
           slug
+          slugNoTrailingSlash
+          analyticsKey
         }
         frontmatter {
           date
+          dateFormatted: date(formatString: "YYYY.MM.DD", locale: "ko")
           title
           description
           category

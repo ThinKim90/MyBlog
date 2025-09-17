@@ -1,3 +1,5 @@
+const { canonicalise, toAnalyticsKey } = require('../../utils/path-helpers');
+
 const HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
@@ -24,31 +26,37 @@ const safeDecode = (value) => {
   }
 };
 
+const stripIndex = (value) => value.replace(/(?:^|\/)index$/, '') || value;
+
 const normaliseForLookup = (input) => {
   const raw = safeDecode(String(input ?? '/')).trim();
-  const withoutHash = raw.split('#')[0];
-  const withoutQuery = withoutHash.split('?')[0];
-  const trimmedLeading = withoutQuery.replace(/^\/+/g, '');
-  const trimmedWhitespace = trimmedLeading.replace(/\s+/g, ' ');
-  const withoutTrailing = trimmedWhitespace.replace(/\/+$|\/+$/g, '');
-
-  if (!withoutTrailing) {
-    return {
-      key: '/',
-      candidates: ['', 'index', '/'],
-    };
-  }
+  const canonical = canonicalise(raw);
+  const analyticsKey = toAnalyticsKey(canonical);
 
   const candidateSet = new Set();
-  const canonical = withoutTrailing.replace(/\/{2,}/g, '/');
-  candidateSet.add(canonical);
-  candidateSet.add(withoutTrailing);
-  candidateSet.add(`${canonical}/`);
-  candidateSet.add(`${withoutTrailing}/`);
+
+  if (!analyticsKey || analyticsKey === '/') {
+    candidateSet.add('');
+    candidateSet.add('/');
+    candidateSet.add('index');
+  } else {
+    candidateSet.add(analyticsKey);
+    candidateSet.add(stripIndex(analyticsKey));
+    candidateSet.add(`${analyticsKey}/`);
+  }
+
+  if (canonical && canonical !== '/') {
+    const normalized = canonical.replace(/^\/+/, '');
+    candidateSet.add(normalized);
+    candidateSet.add(stripIndex(normalized));
+    candidateSet.add(canonical);
+  }
+
+  const candidates = Array.from(candidateSet).filter(Boolean);
 
   return {
-    key: input,
-    candidates: Array.from(candidateSet).filter(Boolean),
+    key: analyticsKey || '/',
+    candidates: candidates.length > 0 ? candidates : ['/'],
   };
 };
 
@@ -81,24 +89,36 @@ const fetchCountForPath = async (path) => {
     return cached.value;
   }
 
-  const attempts = [...candidates, safeDecode(path ?? '/').replace(/^\/+/g, '')];
+  const decoded = safeDecode(path ?? '/').replace(/^\/+/, '');
+  const attempts = Array.from(new Set([...candidates, decoded]));
   for (const candidate of attempts) {
     if (candidate === undefined) {
       continue;
     }
     try {
       const value = await fetchCountForCandidate(candidate);
+      const enriched = {
+        ...value,
+        key,
+        requested: path,
+      };
       inMemoryCache.set(key, {
-        value,
+        value: enriched,
         expiresAt: nowSeconds() + CACHE_TTL_SECONDS,
       });
-      return value;
+      return enriched;
     } catch (error) {
       // 다음 후보로 폴백
     }
   }
 
-  const fallback = { total: 0, unique: 0, resolved: attempts[0] || '/' };
+  const fallback = {
+    total: 0,
+    unique: 0,
+    resolved: attempts[0] || '/',
+    key,
+    requested: path,
+  };
   inMemoryCache.set(key, {
     value: fallback,
     expiresAt: nowSeconds() + CACHE_TTL_SECONDS,

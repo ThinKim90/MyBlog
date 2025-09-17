@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Giscus from '@giscus/react'
 
 interface GiscusCommentsProps {
@@ -6,16 +6,23 @@ interface GiscusCommentsProps {
   repoId: string
   category: string
   categoryId: string
+  discussionTerm: string
 }
 
 const GiscusComments: React.FC<GiscusCommentsProps> = ({
   repo,
   repoId,
   category,
-  categoryId
+  categoryId,
+  discussionTerm
 }) => {
-  // SSR 호환성을 위한 조건부 렌더링
-  if (typeof window === 'undefined') {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
     return (
       <div style={{ 
         marginTop: '40px',
@@ -33,11 +40,14 @@ const GiscusComments: React.FC<GiscusCommentsProps> = ({
   return (
     <div style={{ marginTop: '40px' }}>
       <Giscus
+        key={discussionTerm}
         repo={repo}
         repoId={repoId}
         category={category}
         categoryId={categoryId}
-        mapping="pathname"
+        mapping="specific"
+        term={discussionTerm}
+        strict="1"
         reactionsEnabled="1"
         emitMetadata="0"
         inputPosition="bottom"
