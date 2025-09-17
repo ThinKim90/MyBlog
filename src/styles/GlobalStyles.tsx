@@ -480,6 +480,20 @@ export const GlobalStyles: React.FC = () => {
       color: var(--color-text-primary);
     }
 
+    /* ViewCounter 스켈레톤 애니메이션 */
+    @keyframes view-counter-pulse {
+      0%, 100% { 
+        opacity: 0.7; 
+      }
+      50% { 
+        opacity: 0.3; 
+      }
+    }
+    
+    .view-counter-skeleton {
+      animation: view-counter-pulse 1.5s ease-in-out infinite;
+    }
+
     /* 접근성 개선 */
     @media (prefers-reduced-motion: reduce) {
       *,
@@ -489,6 +503,11 @@ export const GlobalStyles: React.FC = () => {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
+      }
+      
+      .view-counter-skeleton {
+        animation: none !important;
+        opacity: 0.7 !important;
       }
     }
   `

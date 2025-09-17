@@ -52,20 +52,16 @@ const ViewCounter: React.FC<ViewCounterProps> = ({ slug, className }) => {
         fontSize: '12px',
         fontWeight: '400'
       }} aria-label="views">
-        <span style={{
-          display: 'inline-block',
-          width: '20px',
-          height: '12px',
-          backgroundColor: '#e0e0e0',
-          borderRadius: '2px',
-          animation: 'pulse 1.5s ease-in-out infinite'
-        }} />
-        <style>{`
-          @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-          }
-        `}</style>
+        <span 
+          className="view-counter-skeleton"
+          style={{
+            display: 'inline-block',
+            width: '20px',
+            height: '12px',
+            backgroundColor: '#e0e0e0',
+            borderRadius: '2px'
+          }} 
+        />
       </span>
     )
   }
@@ -77,14 +73,16 @@ const ViewCounter: React.FC<ViewCounterProps> = ({ slug, className }) => {
       fontWeight: '400'
     }} aria-label="views">
       {count ?? (
-        <span style={{
-          display: 'inline-block',
-          width: '20px',
-          height: '12px',
-          backgroundColor: '#e0e0e0',
-          borderRadius: '2px',
-          animation: 'pulse 1.5s ease-in-out infinite'
-        }} />
+        <span 
+          className="view-counter-skeleton"
+          style={{
+            display: 'inline-block',
+            width: '20px',
+            height: '12px',
+            backgroundColor: '#e0e0e0',
+            borderRadius: '2px'
+          }} 
+        />
       )} view
     </span>
   )
