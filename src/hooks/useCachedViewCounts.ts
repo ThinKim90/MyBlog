@@ -82,31 +82,26 @@ export const useCachedViewCounts = (slugs: string[]) => {
     setLoading(true)
     
     try {
-      // 모든 slug에 대해 병렬로 요청
-      const promises = slugs.map(async (slug) => {
-        try {
-          const r = await fetch(
-            `/.netlify/functions/get-goatcounter-views?pathname=${encodeURIComponent(slug)}`
-          )
-          const text = await r.text()
-          let body: any = {}
-          try {
-            body = JSON.parse(text)
-          } catch {
-            body = {}
-          }
-          const count = body.viewCount ?? body.count ?? '0'
-          return { slug, count: String(count) }
-        } catch {
-          return { slug, count: '0' }
-        }
+      // 단일 POST 요청으로 모든 슬러그의 조회수 가져오기
+      const response = await fetch('/.netlify/functions/get-goatcounter-views', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ slugs }),
       })
 
-      const results = await Promise.all(promises)
-      const countsMap = results.reduce((acc, { slug, count }) => {
-        acc[slug] = count
-        return acc
-      }, {} as Record<string, string>)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      
+      // 응답 데이터를 기존 형식으로 변환
+      const countsMap: Record<string, string> = {}
+      Object.entries(data).forEach(([slug, viewData]: [string, any]) => {
+        countsMap[slug] = String(viewData?.count || '0')
+      })
 
       // 캐시에 저장
       setCachedCounts(countsMap)
@@ -115,6 +110,7 @@ export const useCachedViewCounts = (slugs: string[]) => {
       setViewCounts(prev => ({ ...prev, ...countsMap }))
     } catch (error) {
       console.error('View count fetch error:', error)
+      // 실패 시 기존 캐시 데이터 유지 (graceful degradation)
     } finally {
       setLoading(false)
     }

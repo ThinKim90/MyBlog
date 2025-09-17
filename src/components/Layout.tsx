@@ -72,7 +72,7 @@ const Layout: React.FC<LayoutProps> = ({
           
           {/* GoatCounter 추적 스크립트 */}
           <script 
-            data-goatcounter="https://thin.goatcounter.com/count"
+            data-goatcounter={`https://${process.env.GATSBY_GC_SITE || 'thin.goatcounter.com'}/count`}
             async 
             src="//gc.zgo.at/count.js"
           />

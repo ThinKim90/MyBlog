@@ -52,7 +52,20 @@ const ViewCounter: React.FC<ViewCounterProps> = ({ slug, className }) => {
         fontSize: '12px',
         fontWeight: '400'
       }} aria-label="views">
-        … view
+        <span style={{
+          display: 'inline-block',
+          width: '20px',
+          height: '12px',
+          backgroundColor: '#e0e0e0',
+          borderRadius: '2px',
+          animation: 'pulse 1.5s ease-in-out infinite'
+        }} />
+        <style>{`
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+          }
+        `}</style>
       </span>
     )
   }
@@ -63,7 +76,16 @@ const ViewCounter: React.FC<ViewCounterProps> = ({ slug, className }) => {
       fontSize: '12px',
       fontWeight: '400'
     }} aria-label="views">
-      {count ?? '…'} view
+      {count ?? (
+        <span style={{
+          display: 'inline-block',
+          width: '20px',
+          height: '12px',
+          backgroundColor: '#e0e0e0',
+          borderRadius: '2px',
+          animation: 'pulse 1.5s ease-in-out infinite'
+        }} />
+      )} view
     </span>
   )
 }
