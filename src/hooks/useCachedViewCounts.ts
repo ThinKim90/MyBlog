@@ -1,136 +1,226 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
-interface CachedViewCount {
-  count: string
-  timestamp: number
+export interface ViewCountEntry {
+  total: number
+  unique: number
+  resolvedPath?: string
+  fetchedAt: number
 }
 
-const CACHE_KEY = 'blog_view_counts'
-const CACHE_DURATION = 5 * 60 * 1000 // 5분
+export type ViewCountMap = Record<string, ViewCountEntry>
 
-// 로컬 스토리지에서 캐시된 조회수 가져오기
-const getCachedCounts = (): Record<string, CachedViewCount> => {
-  if (typeof window === 'undefined') return {}
-  
+const STORAGE_KEY = 'blog_view_counts_v2'
+const CACHE_DURATION = Number(process.env.GATSBY_VIEWCOUNT_CACHE_MS || 5 * 60 * 1000)
+
+const isBrowser = typeof window !== 'undefined'
+
+let cacheLoaded = false
+let memoryCache: ViewCountMap = {}
+const inFlight = new Map<string, Promise<ViewCountMap>>()
+
+const now = () => Date.now()
+
+const isEntryFresh = (entry?: ViewCountEntry) => {
+  if (!entry) return false
+  return now() - entry.fetchedAt < CACHE_DURATION
+}
+
+const ensureCacheLoaded = () => {
+  if (cacheLoaded || !isBrowser) return
+  cacheLoaded = true
   try {
-    const cached = localStorage.getItem(CACHE_KEY)
-    if (!cached) return {}
-    
-    const parsed = JSON.parse(cached)
-    const now = Date.now()
-    
-    // 만료된 캐시 제거
-    const validCache: Record<string, CachedViewCount> = {}
-    Object.entries(parsed).forEach(([slug, data]) => {
-      const cachedData = data as CachedViewCount
-      if (now - cachedData.timestamp < CACHE_DURATION) {
-        validCache[slug] = cachedData
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return
+    const parsed: ViewCountMap = JSON.parse(raw)
+    const freshEntries: ViewCountMap = {}
+    Object.entries(parsed).forEach(([slug, entry]) => {
+      if (isEntryFresh(entry)) {
+        freshEntries[slug] = entry
       }
     })
-    
-    return validCache
-  } catch {
-    return {}
+    memoryCache = freshEntries
+  } catch (error) {
+    console.warn('Failed to read cached view counts:', error)
   }
 }
 
-// 로컬 스토리지에 조회수 캐시하기
-const setCachedCounts = (counts: Record<string, string>) => {
-  if (typeof window === 'undefined') return
-  
+const persistCache = () => {
+  if (!isBrowser) return
   try {
-    const now = Date.now()
-    const cachedData: Record<string, CachedViewCount> = {}
-    
-    Object.entries(counts).forEach(([slug, count]) => {
-      cachedData[slug] = {
-        count,
-        timestamp: now
-      }
-    })
-    
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cachedData))
-  } catch {
-    // 로컬 스토리지 오류 무시
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(memoryCache))
+  } catch (error) {
+    console.warn('Failed to persist view count cache:', error)
   }
 }
 
-export const useCachedViewCounts = (slugs: string[]) => {
-  const [viewCounts, setViewCounts] = useState<Record<string, string>>({})
-  const [loading, setLoading] = useState(false)
+const getSnapshotFor = (slugs: string[]): ViewCountMap => {
+  if (!isBrowser) return {}
+  ensureCacheLoaded()
 
-  // 캐시된 데이터로 즉시 초기화
-  useEffect(() => {
-    const cached = getCachedCounts()
-    const initialCounts: Record<string, string> = {}
-    
-    slugs.forEach(slug => {
-      if (cached[slug]) {
-        initialCounts[slug] = cached[slug].count
-      }
-    })
-    
-    if (Object.keys(initialCounts).length > 0) {
-      setViewCounts(initialCounts)
+  const snapshot: ViewCountMap = {}
+  slugs.forEach((slug) => {
+    const entry = memoryCache[slug]
+    if (isEntryFresh(entry)) {
+      snapshot[slug] = entry
     }
-  }, [slugs])
+  })
+  return snapshot
+}
 
-  // 백그라운드에서 최신 데이터 가져오기
-  const fetchLatestCounts = useCallback(async () => {
-    if (slugs.length === 0) return
+const needsRefresh = (slugs: string[]) => {
+  if (!isBrowser) return false
+  ensureCacheLoaded()
+  return slugs.some((slug) => !isEntryFresh(memoryCache[slug]))
+}
 
-    setLoading(true)
-    
-    try {
-      // 단일 POST 요청으로 모든 슬러그의 조회수 가져오기
-      const response = await fetch('/.netlify/functions/get-goatcounter-views', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ slugs }),
-      })
+const mergeIntoCache = (counts: ViewCountMap) => {
+  if (!isBrowser) return
+  ensureCacheLoaded()
 
+  let changed = false
+  Object.entries(counts).forEach(([slug, entry]) => {
+    const next: ViewCountEntry = {
+      total: entry.total,
+      unique: entry.unique,
+      resolvedPath: entry.resolvedPath || memoryCache[slug]?.resolvedPath || slug,
+      fetchedAt: entry.fetchedAt || now(),
+    }
+    memoryCache[slug] = next
+    changed = true
+  })
+
+  if (changed) {
+    persistCache()
+  }
+}
+
+const parseServerCounts = (slugs: string[], payload: any): ViewCountMap => {
+  const nowTs = now()
+  const result: ViewCountMap = {}
+  const counts = payload?.counts ?? payload ?? {}
+
+  slugs.forEach((slug) => {
+    const record = counts[slug] ?? counts[slug.replace(/^\/+/, '')] ?? {}
+    const total = Number.parseInt(
+      record.total ?? record.count ?? record.views ?? record.count_unique ?? '0',
+      10,
+    ) || 0
+    const unique = Number.parseInt(
+      record.unique ?? record.count_unique ?? record.unique_views ?? '0',
+      10,
+    ) || 0
+
+    result[slug] = {
+      total,
+      unique,
+      resolvedPath: record.resolved || slug,
+      fetchedAt: nowTs,
+    }
+  })
+
+  return result
+}
+
+const requestCounts = (slugs: string[]): Promise<ViewCountMap> => {
+  if (!isBrowser || slugs.length === 0) {
+    return Promise.resolve({})
+  }
+
+  const uniqueSlugs = Array.from(new Set(slugs))
+  const requestKey = uniqueSlugs.slice().sort().join('|')
+
+  const existing = inFlight.get(requestKey)
+  if (existing) {
+    return existing
+  }
+
+  const params = new URLSearchParams()
+  uniqueSlugs.forEach((slug) => params.append('paths', slug))
+
+  const promise = fetch(`/.netlify/functions/get-goatcounter-views?${params.toString()}`, {
+    headers: {
+      Accept: 'application/json',
+    },
+  })
+    .then(async (response) => {
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(`Failed to load view counts: ${response.status}`)
       }
+      const payload = await response.json()
+      const parsed = parseServerCounts(uniqueSlugs, payload)
+      mergeIntoCache(parsed)
+      return parsed
+    })
+    .catch((error) => {
+      console.error('View count fetch error:', error)
+      throw error
+    })
+    .finally(() => {
+      inFlight.delete(requestKey)
+    })
 
-      const data = await response.json()
-      
-      // 응답 데이터를 기존 형식으로 변환
-      const countsMap: Record<string, string> = {}
-      Object.entries(data).forEach(([slug, viewData]: [string, any]) => {
-        countsMap[slug] = String(viewData?.count || '0')
+  inFlight.set(requestKey, promise)
+  return promise
+}
+
+export const useCachedViewCounts = (inputSlugs: string[]) => {
+  const uniqueSlugs = useMemo(
+    () => Array.from(new Set(inputSlugs.filter(Boolean))),
+    [inputSlugs.join('|')],
+  )
+
+  const [viewCounts, setViewCounts] = useState<ViewCountMap>(() => getSnapshotFor(uniqueSlugs))
+  const [loading, setLoading] = useState(() => needsRefresh(uniqueSlugs))
+
+  const key = useMemo(() => uniqueSlugs.join('|'), [uniqueSlugs])
+
+  useEffect(() => {
+    if (!isBrowser) return
+    setViewCounts(getSnapshotFor(uniqueSlugs))
+    setLoading(needsRefresh(uniqueSlugs))
+  }, [key, uniqueSlugs])
+
+  useEffect(() => {
+    if (!isBrowser) return
+    if (uniqueSlugs.length === 0) {
+      setLoading(false)
+      return
+    }
+
+    if (!needsRefresh(uniqueSlugs)) {
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
+    setLoading(true)
+
+    requestCounts(uniqueSlugs)
+      .then((counts) => {
+        if (cancelled) return
+        setViewCounts((prev) => ({ ...prev, ...counts }))
+        setLoading(false)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setLoading(false)
       })
 
-      // 캐시에 저장
-      setCachedCounts(countsMap)
-      
-      // 상태 업데이트
-      setViewCounts(prev => ({ ...prev, ...countsMap }))
-    } catch (error) {
-      console.error('View count fetch error:', error)
-      // 실패 시 기존 캐시 데이터 유지 (graceful degradation)
-    } finally {
-      setLoading(false)
+    return () => {
+      cancelled = true
     }
-  }, [slugs])
+  }, [key, uniqueSlugs])
 
-  // 컴포넌트 마운트 시 백그라운드 업데이트
-  useEffect(() => {
-    // 캐시된 데이터가 있으면 즉시 표시하고 백그라운드에서 업데이트
-    const cached = getCachedCounts()
-    const hasCachedData = slugs.some(slug => cached[slug])
-    
-    if (hasCachedData) {
-      // 캐시된 데이터가 있으면 백그라운드에서 업데이트
-      fetchLatestCounts()
-    } else {
-      // 캐시된 데이터가 없으면 로딩 표시
-      setLoading(true)
-      fetchLatestCounts()
+  const refresh = useCallback(() => {
+    if (!isBrowser || uniqueSlugs.length === 0) {
+      return Promise.resolve({} as ViewCountMap)
     }
-  }, [slugs, fetchLatestCounts])
 
-  return { viewCounts, loading, refresh: fetchLatestCounts }
+    return requestCounts(uniqueSlugs).then((counts) => {
+      setViewCounts((prev) => ({ ...prev, ...counts }))
+      return counts
+    })
+  }, [key, uniqueSlugs])
+
+  return { viewCounts, loading, refresh }
 }

@@ -1,61 +1,47 @@
-import React, { useState, useEffect } from 'react'
+import React, { useMemo } from 'react'
+import type { ViewCountMap } from '../hooks/useCachedViewCounts'
 
 interface BatchViewCounterProps {
   slug: string
   className?: string
-  viewCounts?: Record<string, string>
+  viewCounts?: ViewCountMap
 }
 
-const BatchViewCounter: React.FC<BatchViewCounterProps> = ({ 
-  slug, 
-  className, 
-  viewCounts 
+const skeleton = (
+  <span
+    className="view-counter-skeleton"
+    style={{
+      display: 'inline-block',
+      width: '20px',
+      height: '12px',
+      backgroundColor: '#e0e0e0',
+      borderRadius: '2px',
+    }}
+  />
+)
+
+const BatchViewCounter: React.FC<BatchViewCounterProps> = ({
+  slug,
+  className,
+  viewCounts,
 }) => {
-  const [mounted, setMounted] = useState(false)
+  const formatter = useMemo(() => new Intl.NumberFormat('ko-KR'), [])
+  const entry = viewCounts?.[slug]
+  const total = entry ? formatter.format(entry.total) : undefined
+  const unique = entry ? formatter.format(entry.unique) : undefined
 
-  useEffect(() => setMounted(true), [])
-
-  if (!mounted) {
-    return (
-      <span className={className} style={{ 
-        color: '#666', 
-        fontSize: '12px',
-        fontWeight: '400'
-      }} aria-label="views">
-        <span 
-          className="view-counter-skeleton"
-          style={{
-            display: 'inline-block',
-            width: '20px',
-            height: '12px',
-            backgroundColor: '#e0e0e0',
-            borderRadius: '2px'
-          }} 
-        />
-      </span>
-    )
-  }
-
-  const count = viewCounts?.[slug]
-  
   return (
-    <span className={className} style={{ 
-      color: '#666', 
-      fontSize: '12px',
-      fontWeight: '400'
-    }} aria-label="views">
-      {count ?? (
-        <span 
-          className="view-counter-skeleton"
-          style={{
-            display: 'inline-block',
-            width: '20px',
-            height: '12px',
-            backgroundColor: '#e0e0e0',
-            borderRadius: '2px'
-          }} 
-        />
-      )} view
+    <span
+      className={className}
+      style={{
+        color: '#666',
+        fontSize: '12px',
+        fontWeight: '400',
+      }}
+      aria-label="views"
+      title={unique ? `총 ${total}회 (고유 ${unique}회)` : undefined}
+    >
+      {total ?? skeleton} view{entry && entry.total !== 1 ? 's' : ''}
     </span>
   )
 }
