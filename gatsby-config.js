@@ -15,7 +15,7 @@ module.exports = {
     siteUrl: `https://thinblog.netlify.app/`, // 나중에 실제 도메인으로 변경
     contact: {
       email: `ksehg112@gmail.com`,
-      github: `https://github.com/kimsaehyoung`,
+      github: `https://github.com/ThinKim90`,
       linkedin: `https://www.linkedin.com/in/designerksh/`
     }
   },
