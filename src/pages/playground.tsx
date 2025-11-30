@@ -31,6 +31,33 @@ const PlaygroundPage: React.FC<PlaygroundPageProps> = () => {
       // 3. null로 두면 아이콘 표시
       tags: ["Game", "JavaScript", "Canvas"],
       icon: "🎮" // 이미지가 없을 때 표시할 아이콘
+    },
+    {
+      id: 2,
+      title: "Odd Color Out",
+      description: "제한 시간 안에 다른 밝기의 칩을 찾아 최고 기록에 도전하는 색상 구별 게임입니다.",
+      url: "https://odd-color-out-five.vercel.app/",
+      image: null,
+      tags: ["Game", "React", "Color Perception"],
+      icon: "🎨"
+    },
+    {
+      id: 3,
+      title: "진짜 고수",
+      description: "트렌드에 맞춘 진짜 고수의 이유있는 선택. 매일 아침 7시, 남들과 다른 투자 아이디어를 만나보세요.",
+      url: "https://jinjja-gosu.vercel.app/",
+      image: null,
+      tags: ["Service", "AI", "Investment"],
+      icon: "🧠"
+    },
+    {
+      id: 4,
+      title: "ASCII Studio",
+      description: "이미지나 GIF를 90년대 맥 터미널 감성의 ASCII 아트로 변환하는 크리에이티브 스튜디오입니다.",
+      url: "https://ascii-studio-ten.vercel.app/",
+      image: null,
+      tags: ["Tool", "ASCII Art", "Creative"],
+      icon: "✏️"
     }
     // 추후 더 많은 프로젝트 추가 가능
   ]
