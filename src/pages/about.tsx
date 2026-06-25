@@ -17,19 +17,10 @@ const AboutPage: React.FC = () => {
     }
   `)
   
-  // UX/UI 디자이너 시작 연도 (본인의 실제 시작 연도로 수정하세요)
-  const CAREER_START_YEAR = 2019 // 2025년 기준 7년차이므로 2019년 시작
-  
-  // 현재 연차 계산 함수
-  const calculateYearsOfExperience = () => {
-    const currentYear = new Date().getFullYear()
-    return currentYear - CAREER_START_YEAR + 1 // +1은 첫 해도 1년차로 계산
-  }
-  
   const siteTitle = data.site.siteMetadata.title
   const contact = data.site.siteMetadata.contact
   const designSkills = ['Figma', 'Prototyping', 'Design System', 'User Research']
-  const tools = ['기본적인 Adobe 툴들', 'Figma', 'Notion', '친해지고 있는 GPT', '친해지고 싶은 Cursor']
+  const tools = ['Figma', 'Notion', 'GPT', 'Cursor', 'NotebookLM', 'Claude Code']
 
   return (
     <Layout
@@ -79,7 +70,7 @@ const AboutPage: React.FC = () => {
               color: '#4a453e',
               marginBottom: '0'
             }}>
-              가늘고 길게, 그러나 뾰족하게 성장하고 싶은 {calculateYearsOfExperience()}년차 UX/UI 디자이너.
+              가늘고 길게, 그러나 뾰족하게 성장하고 싶은 UX/UI 디자이너.
             </p>
           </div>
 

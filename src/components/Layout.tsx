@@ -10,6 +10,7 @@ interface LayoutProps {
   children: React.ReactNode
   title?: string
   description?: string
+  contentMaxWidth?: string
   categories?: string[]
   selectedCategory?: string
   onCategoryChange?: (category: string) => void
@@ -20,6 +21,7 @@ const Layout: React.FC<LayoutProps> = ({
   children, 
   title, 
   description,
+  contentMaxWidth = '800px',
   categories,
   selectedCategory,
   onCategoryChange,
@@ -88,7 +90,7 @@ const Layout: React.FC<LayoutProps> = ({
         
         <main style={{
           flex: '1',
-          maxWidth: '800px', // 블로그 컨테이너 너비
+          maxWidth: contentMaxWidth,
           margin: '0 auto',
           padding: 'var(--space-5)', // 20px
           width: '100%'

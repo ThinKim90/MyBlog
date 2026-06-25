@@ -10,7 +10,13 @@ export interface ViewCountEntry {
 
 export type ViewCountMap = Record<string, ViewCountEntry>
 
-const STORAGE_KEY = 'blog_view_counts_v2'
+declare global {
+  interface Window {
+    __BLOG_VIEW_COUNTS__?: ViewCountMap
+  }
+}
+
+const STORAGE_KEY = 'blog_view_counts_v3'
 const CACHE_DURATION = Number(process.env.GATSBY_VIEWCOUNT_CACHE_MS || 5 * 60 * 1000)
 
 const isBrowser = typeof window !== 'undefined'
@@ -47,20 +53,44 @@ const isEntryFresh = (entry?: ViewCountEntry) => {
   return now() - entry.fetchedAt < CACHE_DURATION
 }
 
+const mergeEntry = (slug: string, entry: ViewCountEntry) => {
+  const existing = memoryCache[slug]
+  if (existing && existing.fetchedAt > entry.fetchedAt) {
+    return
+  }
+  memoryCache[slug] = entry
+}
+
+const bootstrapFromBuildSnapshot = () => {
+  if (!isBrowser) return
+  const snapshot = window.__BLOG_VIEW_COUNTS__
+  if (!snapshot) return
+
+  Object.entries(snapshot).forEach(([slug, entry]) => {
+    if (!entry || typeof entry.total !== 'number') return
+    mergeEntry(slug, {
+      total: entry.total,
+      unique: entry.unique ?? 0,
+      resolvedPath: entry.resolvedPath || slug,
+      fetchedAt: entry.fetchedAt || now(),
+    })
+  })
+}
+
 const ensureCacheLoaded = () => {
   if (cacheLoaded || !isBrowser) return
   cacheLoaded = true
+
+  bootstrapFromBuildSnapshot()
+
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) return
     const parsed: ViewCountMap = JSON.parse(raw)
-    const freshEntries: ViewCountMap = {}
     Object.entries(parsed).forEach(([slug, entry]) => {
-      if (isEntryFresh(entry)) {
-        freshEntries[slug] = entry
-      }
+      if (!entry || typeof entry.total !== 'number') return
+      mergeEntry(slug, entry)
     })
-    memoryCache = freshEntries
   } catch (error) {
     console.warn('Failed to read cached view counts:', error)
   }
@@ -82,7 +112,7 @@ const getSnapshotFor = (slugs: string[]): ViewCountMap => {
   const snapshot: ViewCountMap = {}
   slugs.forEach((slug) => {
     const entry = memoryCache[slug]
-    if (isEntryFresh(entry)) {
+    if (entry) {
       snapshot[slug] = entry
     }
   })
@@ -95,9 +125,14 @@ const needsRefresh = (slugs: string[]) => {
   return slugs.some((slug) => !isEntryFresh(memoryCache[slug]))
 }
 
+const hasAnyData = (slugs: string[]) => {
+  if (!isBrowser) return false
+  ensureCacheLoaded()
+  return slugs.some((slug) => Boolean(memoryCache[slug]))
+}
+
 const mergeIntoCache = (counts: ViewCountMap) => {
   if (!isBrowser) return
-  ensureCacheLoaded()
 
   let changed = false
   Object.entries(counts).forEach(([slug, entry]) => {
@@ -107,7 +142,7 @@ const mergeIntoCache = (counts: ViewCountMap) => {
       resolvedPath: entry.resolvedPath || memoryCache[slug]?.resolvedPath || slug,
       fetchedAt: entry.fetchedAt || now(),
     }
-    memoryCache[slug] = next
+    mergeEntry(slug, next)
     changed = true
   })
 
@@ -130,14 +165,21 @@ const parseServerCounts = (bundles: PreparedSlug[], payload: any): ViewCountMap 
       counts[canonical] ??
       counts[canonical.replace(/^\/+/, '')] ??
       {}
-    const total = Number.parseInt(
-      record.total ?? record.count ?? record.views ?? record.count_unique ?? '0',
-      10,
-    ) || 0
-    const unique = Number.parseInt(
-      record.unique ?? record.count_unique ?? record.unique_views ?? '0',
-      10,
-    ) || 0
+
+    if (record.failed) {
+      return
+    }
+
+    const total =
+      Number.parseInt(
+        record.total ?? record.count ?? record.views ?? record.count_unique ?? '0',
+        10,
+      ) || 0
+    const unique =
+      Number.parseInt(
+        record.unique ?? record.count_unique ?? record.unique_views ?? '0',
+        10,
+      ) || 0
 
     result[withoutTrailingSlash] = {
       total,
@@ -178,7 +220,9 @@ const requestCounts = (bundles: PreparedSlug[]): Promise<ViewCountMap> => {
       }
       const payload = await response.json()
       const parsed = parseServerCounts(bundles, payload)
-      mergeIntoCache(parsed)
+      if (Object.keys(parsed).length > 0) {
+        mergeIntoCache(parsed)
+      }
       return parsed
     })
     .catch((error) => {
@@ -202,14 +246,26 @@ export const useCachedViewCounts = (inputSlugs: string[]) => {
   const slugKeys = useMemo(() => extractKeys(slugBundles), [slugBundles])
 
   const [viewCounts, setViewCounts] = useState<ViewCountMap>(() => getSnapshotFor(slugKeys))
-  const [loading, setLoading] = useState(() => needsRefresh(slugKeys))
+  const [loading, setLoading] = useState(
+    () => !hasAnyData(slugKeys) && needsRefresh(slugKeys),
+  )
 
   const key = useMemo(() => slugKeys.join('|'), [slugKeys])
 
   useEffect(() => {
     if (!isBrowser) return
-    setViewCounts(getSnapshotFor(slugKeys))
-    setLoading(needsRefresh(slugKeys))
+    const snapshot = getSnapshotFor(slugKeys)
+    setViewCounts(snapshot)
+    setLoading(!hasAnyData(slugKeys) && needsRefresh(slugKeys))
+
+    const handleSnapshotLoaded = () => {
+      bootstrapFromBuildSnapshot()
+      setViewCounts(getSnapshotFor(slugKeys))
+      setLoading(!hasAnyData(slugKeys) && needsRefresh(slugKeys))
+    }
+
+    window.addEventListener('blog-view-counts-loaded', handleSnapshotLoaded)
+    return () => window.removeEventListener('blog-view-counts-loaded', handleSnapshotLoaded)
   }, [key, slugKeys])
 
   useEffect(() => {
@@ -225,12 +281,16 @@ export const useCachedViewCounts = (inputSlugs: string[]) => {
     }
 
     let cancelled = false
-    setLoading(true)
+    if (!hasAnyData(slugKeys)) {
+      setLoading(true)
+    }
 
     requestCounts(slugBundles)
       .then((counts) => {
         if (cancelled) return
-        setViewCounts((prev) => ({ ...prev, ...counts }))
+        if (Object.keys(counts).length > 0) {
+          setViewCounts((prev) => ({ ...prev, ...counts }))
+        }
         setLoading(false)
       })
       .catch(() => {
@@ -249,7 +309,9 @@ export const useCachedViewCounts = (inputSlugs: string[]) => {
     }
 
     return requestCounts(slugBundles).then((counts) => {
-      setViewCounts((prev) => ({ ...prev, ...counts }))
+      if (Object.keys(counts).length > 0) {
+        setViewCounts((prev) => ({ ...prev, ...counts }))
+      }
       return counts
     })
   }, [slugBundles, slugKeys])

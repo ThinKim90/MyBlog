@@ -6,6 +6,7 @@
 
 // You can delete this file if you're not using it
 
+const fs = require('fs');
 const path = require('path');
 const { createFilePath } = require('gatsby-source-filesystem');
 const {
@@ -15,6 +16,9 @@ const {
   normaliseExplicitSlug,
   normaliseLegacyPath,
 } = require('./utils/path-helpers');
+const { fetchCountsForPosts } = require('./utils/goatcounter-counts');
+
+const VIEW_COUNTS_SNAPSHOT = path.join(__dirname, 'static', 'blog-view-counts.json');
 
 exports.createSchemaCustomization = ({ actions }) => {
   const { createTypes } = actions;
@@ -50,6 +54,48 @@ exports.onCreateWebpackConfig = ({ getConfig, actions }) => {
       },
     },
   });
+};
+
+exports.onPreBuild = async ({ graphql, reporter }) => {
+  const result = await graphql(`
+    {
+      allMarkdownRemark {
+        nodes {
+          fields {
+            slugNoTrailingSlash
+            analyticsKey
+          }
+        }
+      }
+    }
+  `);
+
+  if (result.errors) {
+    reporter.warn('조회수 스냅샷 생성을 건너뜁니다: 글 목록을 불러오지 못했습니다.');
+    return;
+  }
+
+  const posts = result.data.allMarkdownRemark.nodes.map((node) => ({
+    slugKey: node.fields.slugNoTrailingSlash,
+    analyticsKey: node.fields.analyticsKey,
+  }));
+
+  if (posts.length === 0) {
+    return;
+  }
+
+  try {
+    const counts = await fetchCountsForPosts(posts, { useCache: false });
+    fs.writeFileSync(
+      VIEW_COUNTS_SNAPSHOT,
+      JSON.stringify({ counts, builtAt: Date.now() }, null, 2),
+    );
+    reporter.info(`조회수 스냅샷 생성 완료 (${Object.keys(counts).length}개 글)`);
+  } catch (error) {
+    reporter.warn(
+      `조회수 스냅샷 생성 실패: ${error.message}. 기존 스냅샷을 유지합니다.`,
+    );
+  }
 };
 
 // Create blog post pages dynamically

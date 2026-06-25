@@ -11,6 +11,10 @@ import "prismjs/themes/prism-tomorrow.css"
 import "prismjs/plugins/line-numbers/prism-line-numbers.css"
 
 import { bundleSlug, toAnalyticsKey } from "./src/utils/slug"
+import {
+  markOptimisticView,
+  shouldTrackOptimisticView,
+} from "./src/utils/viewCountOptimistic"
 
 const MAX_RETRY = 10
 const RETRY_INTERVAL_MS = 250
@@ -35,12 +39,23 @@ export const onClientEntry = () => {
   window.goatcounter = window.goatcounter || {}
   window.goatcounter.no_onload = true
   window.goatcounter.path = (pathname) => toAnalyticsKey(pathname || window.location?.pathname || "/")
+
+  if (!window.__BLOG_VIEW_COUNTS__) {
+    fetch("/blog-view-counts.json")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!data?.counts) return
+        window.__BLOG_VIEW_COUNTS__ = data.counts
+        window.dispatchEvent(new CustomEvent("blog-view-counts-loaded"))
+      })
+      .catch(() => {})
+  }
 }
 
 export const onRouteUpdate = ({ location }) => {
   if (typeof window === "undefined") return
 
-  const { analyticsKey } = bundleSlug(location?.pathname || "/")
+  const { analyticsKey, withoutTrailingSlash } = bundleSlug(location?.pathname || "/")
   const payload = {
     path: analyticsKey,
     title: typeof document !== "undefined" ? document.title : undefined,
@@ -48,4 +63,8 @@ export const onRouteUpdate = ({ location }) => {
   }
 
   scheduleGoatCounterCount(payload)
+
+  if (shouldTrackOptimisticView(location?.pathname || "/")) {
+    markOptimisticView(withoutTrailingSlash)
+  }
 }

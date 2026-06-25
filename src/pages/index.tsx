@@ -38,7 +38,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
 
   // 모든 slug 추출하여 캐시된 조회수 가져오기
   const allSlugs = useMemo(() => posts.map(post => post.fields.slug), [posts])
-  const { viewCounts } = useCachedViewCounts(allSlugs)
+  const { viewCounts, loading } = useCachedViewCounts(allSlugs)
 
   // 모든 카테고리 추출 (전체를 첫 번째로)
   const categories = useMemo(() => {
@@ -229,6 +229,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
                       <BatchViewCounter 
                         slug={post.fields.slug} 
                         viewCounts={viewCounts}
+                        loading={loading}
                       />
                     </span>
                   </div>

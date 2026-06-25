@@ -53,7 +53,7 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
   const { previous, next } = data
 
   // 현재 포스트의 캐시된 조회수 가져오기
-  const { viewCounts } = useCachedViewCounts([post.fields.slug])
+  const { viewCounts, loading } = useCachedViewCounts([post.fields.slug])
 
   return (
     <Layout 
@@ -123,6 +123,7 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
           <BatchViewCounter 
             slug={post.fields.slug} 
             viewCounts={viewCounts}
+            loading={loading}
           />
         </div>
       </header>
