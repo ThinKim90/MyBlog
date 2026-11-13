@@ -12,7 +12,9 @@ export type { ViewCountEntry, ViewCountMap } from '../utils/viewCountCache'
 export const useCachedViewCounts = (inputSlugs: string[]) => {
   const key = inputSlugs.join('|')
   const slugs = useMemo(() => inputSlugs.filter(Boolean), [key])
-  const [viewCounts, setViewCounts] = useState<ViewCountMap>(() => getViewCountSnapshot(slugs))
+  // The server and the first browser render must match. Restore the cache in
+  // the mount effect, before waiting for any network refresh.
+  const [viewCounts, setViewCounts] = useState<ViewCountMap>({})
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {

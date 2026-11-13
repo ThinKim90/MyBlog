@@ -49,7 +49,6 @@ const BatchViewCounter: React.FC<BatchViewCounterProps> = ({
         fontSize: '12px',
         fontWeight: '400',
       }}
-      suppressHydrationWarning
       aria-label={total ? `누적 방문 ${total}회` : '방문 수 확인 중'}
       title={total ? `누적 방문 ${total}회 · 집계값은 늦게 반영될 수 있습니다.` : '방문 수를 아직 확인하지 못했습니다.'}
     >

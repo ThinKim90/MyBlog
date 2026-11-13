@@ -7,7 +7,7 @@ const ts = require('typescript');
 const values = require('../utils/view-count-values');
 
 // Run the actual browser modules with isolated storage, without contacting GoatCounter.
-function browserRuntime(initial = {}, { blockedStorage = false, env = 'production' } = {}) {
+function browserRuntime(initial = {}, { blockedStorage = false, env = 'production', ssr = false } = {}) {
   const storage = new Map(Object.entries(initial));
   const window = new EventTarget();
   window.localStorage = {
@@ -24,9 +24,10 @@ function browserRuntime(initial = {}, { blockedStorage = false, env = 'productio
       compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
     }).outputText;
     vm.runInNewContext(code, {
-      module, exports: module.exports, window, CustomEvent, URLSearchParams, Date,
+      module, exports: module.exports, window: ssr ? undefined : window, CustomEvent, URLSearchParams, Date,
       process: { env: { NODE_ENV: env } },
       require(specifier) {
+        if (!specifier.startsWith('.')) return require(specifier);
         const target = path.resolve(path.dirname(file), specifier);
         if (target.startsWith(path.resolve(__dirname, '../src'))) return load(`${target}.ts`);
         return require(target);
@@ -34,7 +35,7 @@ function browserRuntime(initial = {}, { blockedStorage = false, env = 'productio
     }, { filename: file });
     return module.exports;
   }
-  return { window, storage, cache: load('src/utils/viewCountCache.ts'), optimistic: load('src/utils/viewCountOptimistic.ts') };
+  return { window, storage, load, cache: load('src/utils/viewCountCache.ts'), optimistic: load('src/utils/viewCountOptimistic.ts') };
 }
 
 async function withBackend(run) {
@@ -241,4 +242,22 @@ test('manual tracking configuration precedes the async tracker in generated head
   assert.equal(head[0].key, 'goatcounter-config');
   assert.match(head[0].props.dangerouslySetInnerHTML.__html, /no_onload:true/);
   assert.ok(head.indexOf(tracker) > 0);
+});
+
+test('server and initial browser render match even when saved counts exist', () => {
+  const React = require('react');
+  const { renderToString } = require('react-dom/server');
+  const saved = { blog_view_counts_v4: JSON.stringify({ '/post': { total: 1234, fetchedAt: Date.now() } }) };
+  const server = browserRuntime({}, { ssr: true });
+  const client = browserRuntime(saved);
+  const render = runtime => {
+    const { useCachedViewCounts } = runtime.load('src/hooks/useCachedViewCounts.ts');
+    function Counter() {
+      const { viewCounts } = useCachedViewCounts(['/post']);
+      return React.createElement('span', {}, viewCounts['/post']?.total ?? '—');
+    }
+    return renderToString(React.createElement(Counter));
+  };
+  assert.equal(render(server), render(client));
+  assert.equal(client.cache.getCachedViewCount('/post').total, 1234);
 });
