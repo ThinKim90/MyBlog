@@ -21,7 +21,7 @@ function browserRuntime(initial = {}, { blockedStorage = false, env = 'productio
     const module = { exports: {} };
     modules.set(file, module);
     const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
-      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.React, esModuleInterop: true },
     }).outputText;
     vm.runInNewContext(code, {
       module, exports: module.exports, window: ssr ? undefined : window, CustomEvent, URLSearchParams, Date,
@@ -260,4 +260,15 @@ test('server and initial browser render match even when saved counts exist', () 
   };
   assert.equal(render(server), render(client));
   assert.equal(client.cache.getCachedViewCount('/post').total, 1234);
+});
+
+test('embedded CSS survives server rendering without HTML-escaped selector text', () => {
+  const React = require('react');
+  const { renderToString } = require('react-dom/server');
+  const { default: InlineStyles } = browserRuntime().load('src/components/InlineStyles.tsx');
+  const css = 'header > div a { background: url("a&b"); }';
+  const html = renderToString(React.createElement(InlineStyles, { css }));
+  assert.equal(html, `<style>${css}</style>`);
+  assert.ok(!html.includes('&gt;'));
+  assert.ok(!html.includes('&quot;'));
 });

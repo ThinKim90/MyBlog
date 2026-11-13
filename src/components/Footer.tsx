@@ -1,4 +1,5 @@
 import React from "react"
+import InlineStyles from "./InlineStyles"
 import { useStaticQuery, graphql } from "gatsby"
 import { useTheme } from "../styles/ThemeProvider"
 
@@ -196,8 +197,7 @@ const Footer: React.FC = () => {
       </div>
 
       {/* 모바일 반응형 스타일 */}
-      <style>
-        {`
+      <InlineStyles css={`
           @media (max-width: ${theme.breakpoints.sm}) {
             footer > div > div:first-child {
               flex-direction: column !important;
@@ -216,8 +216,7 @@ const Footer: React.FC = () => {
               gap: ${theme.space[2]} !important;
             }
           }
-        `}
-      </style>
+        `} />
     </footer>
   )
 }

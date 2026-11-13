@@ -1,4 +1,5 @@
 import React from "react"
+import InlineStyles from "./InlineStyles"
 import { Link } from "gatsby"
 import { useTheme } from "../styles/ThemeProvider"
 import { Code2, User } from "lucide-react"
@@ -213,8 +214,7 @@ const Header: React.FC<HeaderProps> = ({
       )}
 
       {/* 모바일 반응형 스타일 */}
-      <style>
-        {`
+      <InlineStyles css={`
           @media (max-width: ${theme.breakpoints.md}) {
             header > div:first-child > div:first-child {
               flex: 1;
@@ -264,8 +264,7 @@ const Header: React.FC<HeaderProps> = ({
               justify-content: flex-start !important;
             }
           }
-        `}
-      </style>
+        `} />
     </header>
   )
 }

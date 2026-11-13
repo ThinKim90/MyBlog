@@ -1,4 +1,5 @@
 import React, { useEffect } from "react"
+import InlineStyles from "../components/InlineStyles"
 import { graphql, Link } from "gatsby"
 import Layout from "../components/Layout"
 import BatchViewCounter from "../components/BatchViewCounter"
@@ -256,8 +257,7 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
       </div>
 
       {/* 모바일 반응형 스타일 */}
-      <style>
-        {`
+      <InlineStyles css={`
           /* 블로그 포스트 콘텐츠 내 li 요소 스타일 통일 */
           .blog-post-content li {
             font-size: 16px !important;
@@ -346,8 +346,7 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
               padding: 8px 16px !important;
             }
           }
-        `}
-      </style>
+        `} />
     </Layout>
   )
 }

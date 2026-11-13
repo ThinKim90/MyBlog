@@ -1,4 +1,5 @@
 import React, { ButtonHTMLAttributes, forwardRef } from 'react'
+import InlineStyles from "../InlineStyles"
 import { useTheme } from '../../styles/ThemeProvider'
 
 // 버튼 변형 타입
@@ -177,14 +178,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {!loading && rightIcon && rightIcon}
         
         {/* 스피너 애니메이션 정의 */}
-        <style>
-          {`
+        <InlineStyles css={`
             @keyframes spin {
               0% { transform: rotate(0deg); }
               100% { transform: rotate(360deg); }
             }
-          `}
-        </style>
+          `} />
       </button>
     )
   }

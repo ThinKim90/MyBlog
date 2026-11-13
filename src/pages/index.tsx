@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react"
+import InlineStyles from "../components/InlineStyles"
 import { graphql, Link } from "gatsby"
 import Layout from "../components/Layout"
 import BatchViewCounter from "../components/BatchViewCounter"
@@ -281,8 +282,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
       </main>
       
       {/* 반응형 스타일 */}
-      <style>
-        {`
+      <InlineStyles css={`
           @media (max-width: 768px) {
             /* 카드 내부 요소들 모바일 최적화 - 한 줄로 유지 */
             .card-meta-container {
@@ -314,8 +314,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
               font-size: 12px !important;
             }
           }
-        `}
-      </style>
+        `} />
     </Layout>
   )
 }
