@@ -15,8 +15,7 @@ const Header: React.FC<HeaderProps> = ({
   siteTitle = "", 
   categories = [], 
   selectedCategory = "전체", 
-  onCategoryChange,
-  getCategoryCount 
+  onCategoryChange
 }) => {
   const theme = useTheme()
   
@@ -271,4 +270,4 @@ const Header: React.FC<HeaderProps> = ({
   )
 }
 
-export default Header 
+export default Header

@@ -17,6 +17,7 @@ const {
   normaliseLegacyPath,
 } = require('./utils/path-helpers');
 const { fetchCountsForPosts } = require('./utils/goatcounter-counts');
+const { allowedDraftStates, isDraftPreview, isDraft } = require('./utils/publication');
 
 const VIEW_COUNTS_SNAPSHOT = path.join(__dirname, 'static', 'blog-view-counts.json');
 
@@ -24,6 +25,7 @@ exports.createSchemaCustomization = ({ actions }) => {
   const { createTypes } = actions;
   createTypes(`
     type MarkdownRemarkFields {
+      isDraft: Boolean!
       slug: String!
       slugNoTrailingSlash: String!
       analyticsKey: String!
@@ -31,6 +33,7 @@ exports.createSchemaCustomization = ({ actions }) => {
     }
 
     type MarkdownRemarkFrontmatter {
+      draft: Boolean
       slug: String
       aliases: [String]
       redirect_from: [String]
@@ -59,7 +62,7 @@ exports.onCreateWebpackConfig = ({ getConfig, actions }) => {
 exports.onPreBuild = async ({ graphql, reporter }) => {
   const result = await graphql(`
     {
-      allMarkdownRemark {
+      allMarkdownRemark(filter: { fields: { isDraft: { eq: false } } }) {
         nodes {
           fields {
             slugNoTrailingSlash
@@ -98,6 +101,21 @@ exports.onPreBuild = async ({ graphql, reporter }) => {
   }
 };
 
+// Page queries use the same publication policy as detail-page generation.
+exports.onCreatePage = ({ page, actions }) => {
+  if (page.path !== '/') return;
+  const draftPreview = isDraftPreview();
+  if (page.context.draftPreview === draftPreview) return;
+  actions.createPage({
+    ...page,
+    context: {
+      ...page.context,
+      draftPreview,
+      allowedDraftStates: allowedDraftStates(),
+    },
+  });
+};
+
 // Create blog post pages dynamically
 exports.createPages = async ({ graphql, actions, reporter }) => {
   const { createPage, createRedirect } = actions;
@@ -108,8 +126,9 @@ exports.createPages = async ({ graphql, actions, reporter }) => {
   // Get all markdown blog posts sorted by date
   const result = await graphql(
     `
-      {
+      query PostsForPublication($allowedDraftStates: [Boolean!]!) {
         allMarkdownRemark(
+          filter: { fields: { isDraft: { in: $allowedDraftStates } } }
           sort: { frontmatter: { date: ASC } }
           limit: 1000
         ) {
@@ -124,7 +143,8 @@ exports.createPages = async ({ graphql, actions, reporter }) => {
           }
         }
       }
-    `
+    `,
+    { allowedDraftStates: allowedDraftStates() }
   );
 
   if (result.errors) {
@@ -177,6 +197,7 @@ exports.onCreateNode = ({ node, actions, getNode }) => {
   const { createNodeField } = actions;
 
   if (node.internal.type === `MarkdownRemark`) {
+    createNodeField({ name: 'isDraft', node, value: isDraft(node.frontmatter) });
     const filePath = createFilePath({ node, getNode, basePath: 'contents', trailingSlash: true });
     const fileSlug = canonicalise(filePath);
 

@@ -7,8 +7,11 @@
 /**
  * @type {import('gatsby').GatsbyConfig}
  */
+const { isDraftPreview } = require('./utils/publication');
+
 module.exports = {
   siteMetadata: {
+    draftPreview: isDraftPreview(),
     title: `Thin Blog`,
     description: `개인 블로그입니다. 다양한 주제들을 다룹니다.`,
     author: `@yourusername`,

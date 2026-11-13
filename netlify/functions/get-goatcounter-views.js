@@ -70,12 +70,15 @@ exports.handler = async (event) => {
     }
 
     const responsePayload = await fetchCountsForPaths(requestedPaths);
+    const failed = Object.values(responsePayload).some(record => record.failed);
 
     return {
       statusCode: 200,
       headers: {
         ...HEADERS,
-        'Cache-Control': 'public, max-age=120, stale-while-revalidate=300',
+        'Cache-Control': failed
+          ? 'public, max-age=30'
+          : 'public, max-age=900, stale-while-revalidate=3600',
       },
       body: JSON.stringify({ counts: responsePayload, site: SITE }),
     };

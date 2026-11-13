@@ -33,6 +33,7 @@ const Layout: React.FC<LayoutProps> = ({
         siteMetadata {
           title
           description
+          draftPreview
         }
       }
     }
@@ -42,6 +43,7 @@ const Layout: React.FC<LayoutProps> = ({
   const siteDescription = data.site.siteMetadata.description
   const pageTitle = title ? `${title} | ${siteTitle}` : siteTitle
   const pageDescription = description || siteDescription
+  const draftPreview = data.site.siteMetadata.draftPreview
 
   return (
     <ThemeProvider>
@@ -54,6 +56,7 @@ const Layout: React.FC<LayoutProps> = ({
         <Helmet>
           <title>{pageTitle}</title>
           <meta name="description" content={pageDescription} />
+          {draftPreview && <meta name="robots" content="noindex, nofollow" />}
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <meta charSet="utf-8" />
           
@@ -95,6 +98,21 @@ const Layout: React.FC<LayoutProps> = ({
           padding: 'var(--space-5)', // 20px
           width: '100%'
         }}>
+          {draftPreview && (
+            <aside role="note" style={{
+              padding: "12px 16px",
+              marginBottom: "20px",
+              border: "1px solid #dfc68c",
+              borderRadius: "8px",
+              background: "#fff6df",
+              color: "#6b4710",
+              fontSize: "14px",
+              lineHeight: 1.6,
+            }}>
+              <strong>초안 미리보기</strong>
+              <div>작성 중인 글을 함께 보고 있어요. 초안은 운영 사이트에 발행되지 않습니다.</div>
+            </aside>
+          )}
           {children}
         </main>
         
@@ -104,4 +122,4 @@ const Layout: React.FC<LayoutProps> = ({
   )
 }
 
-export default Layout 
+export default Layout

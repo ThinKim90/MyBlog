@@ -29,10 +29,26 @@ exports.onRenderBody = ({ setHtmlAttributes, setHeadComponents }) => {
   const counts = readViewCountSnapshot();
   setHeadComponents([
     React.createElement('script', {
+      key: 'goatcounter-config',
+      dangerouslySetInnerHTML: {
+        __html: 'window.goatcounter=Object.assign(window.goatcounter||{},{no_onload:true});',
+      },
+    }),
+    React.createElement('script', {
       key: 'blog-view-counts-snapshot',
       dangerouslySetInnerHTML: {
         __html: `window.__BLOG_VIEW_COUNTS__=${JSON.stringify(counts)};`,
       },
     }),
+  ]);
+};
+
+// Helmet also inserts the async tracker into the head. Configure manual tracking
+// before that script can execute, even when it is already in the browser cache.
+exports.onPreRenderHTML = ({ getHeadComponents, replaceHeadComponents }) => {
+  const head = getHeadComponents();
+  replaceHeadComponents([
+    ...head.filter(component => component?.key === 'goatcounter-config'),
+    ...head.filter(component => component?.key !== 'goatcounter-config'),
   ]);
 };

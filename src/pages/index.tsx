@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react"
 import { graphql, Link } from "gatsby"
 import Layout from "../components/Layout"
 import BatchViewCounter from "../components/BatchViewCounter"
+import DraftBadge from "../components/DraftBadge"
 import { useCachedViewCounts } from "../hooks/useCachedViewCounts"
 
 interface BlogIndexProps {
@@ -16,6 +17,7 @@ interface BlogIndexProps {
       nodes: {
         excerpt: string
         fields: {
+          isDraft: boolean
           slug: string
           slugNoTrailingSlash: string
           analyticsKey: string
@@ -37,7 +39,10 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
   const posts = data.allMarkdownRemark.nodes
 
   // 모든 slug 추출하여 캐시된 조회수 가져오기
-  const allSlugs = useMemo(() => posts.map(post => post.fields.slug), [posts])
+  const allSlugs = useMemo(
+    () => posts.filter(post => !post.fields.isDraft).map(post => post.fields.slug),
+    [posts]
+  )
   const { viewCounts, loading } = useCachedViewCounts(allSlugs)
 
   // 모든 카테고리 추출 (전체를 첫 번째로)
@@ -53,23 +58,31 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
 
   // URL 해시에서 카테고리 읽기
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const hash = window.location.hash.slice(1) // # 제거
-      if (hash && categories.includes(hash)) {
-        setSelectedCategory(hash)
+    const syncCategoryFromHash = () => {
+      let category = ""
+      try {
+        category = decodeURIComponent(window.location.hash.slice(1))
+      } catch {
+        // 잘못 인코딩된 주소는 전체 목록으로 복원합니다.
       }
+      setSelectedCategory(categories.includes(category) ? category : "전체")
     }
+
+    syncCategoryFromHash()
+    window.addEventListener("hashchange", syncCategoryFromHash)
+    return () => window.removeEventListener("hashchange", syncCategoryFromHash)
   }, [categories])
 
   // 카테고리 변경 시 URL 해시 업데이트
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category)
     if (typeof window !== 'undefined') {
-      if (category === "전체") {
-        window.history.replaceState(null, '', window.location.pathname)
-      } else {
-        window.history.replaceState(null, '', `#${encodeURIComponent(category)}`)
-      }
+      const hash = category === "전체" ? "" : `#${encodeURIComponent(category)}`
+      window.history.replaceState(
+        window.history.state,
+        '',
+        `${window.location.pathname}${window.location.search}${hash}`
+      )
     }
   }
 
@@ -140,6 +153,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'flex-start',
+                    gap: '8px',
                   }}>
                     <span style={{
                       display: 'inline-block',
@@ -154,6 +168,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
                     }}>
                       {post.frontmatter.category}
                     </span>
+                    {post.fields.isDraft && <DraftBadge />}
                   </div>
                   
                   {/* 타이틀 */}
@@ -211,6 +226,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
                       {post.frontmatter.dateFormatted}
                     </span>
                     
+                    {!post.fields.isDraft && <>
                     {/* 구분선 */}
                     <div style={{
                       width: '1px',
@@ -232,6 +248,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
                         loading={loading}
                       />
                     </span>
+                    </>}
                   </div>
                 </div>
               </article>
@@ -246,7 +263,7 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
               '{selectedCategory}' 카테고리에 포스트가 없습니다.
             </p>
             <button
-              onClick={() => setSelectedCategory("전체")}
+              onClick={() => handleCategoryChange("전체")}
               style={{
                 marginTop: '10px',
                 padding: '8px 16px',
@@ -306,17 +323,21 @@ const BlogIndex: React.FC<BlogIndexProps> = ({ data }) => {
 export default BlogIndex
 
 export const pageQuery = graphql`
-  query {
+  query BlogIndex($allowedDraftStates: [Boolean!]!) {
     site {
       siteMetadata {
         title
         description
       }
     }
-    allMarkdownRemark(sort: { frontmatter: { date: DESC } }) {
+    allMarkdownRemark(
+      sort: { frontmatter: { date: DESC } }
+      filter: { fields: { isDraft: { in: $allowedDraftStates } } }
+    ) {
       nodes {
         excerpt
         fields {
+          isDraft
           slug
           slugNoTrailingSlash
           analyticsKey

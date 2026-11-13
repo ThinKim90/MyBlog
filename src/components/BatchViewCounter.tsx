@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { bundleSlug } from 'utils/slug'
 import {
-  getOptimisticBoost,
+  getOptimisticTotal,
   subscribeOptimisticViews,
 } from 'utils/viewCountOptimistic'
 import type { ViewCountMap } from '../hooks/useCachedViewCounts'
@@ -21,26 +21,25 @@ const BatchViewCounter: React.FC<BatchViewCounterProps> = ({
 }) => {
   const formatter = useMemo(() => new Intl.NumberFormat('ko-KR'), [])
   const slugKey = useMemo(() => bundleSlug(slug).withoutTrailingSlash, [slug])
-  const [boost, setBoost] = useState(0)
+  const entry = viewCounts?.[slugKey]
+  const [optimistic, setOptimistic] = useState<number | undefined>(undefined)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-    setBoost(getOptimisticBoost(slugKey))
-    return subscribeOptimisticViews(() => {
-      setBoost(getOptimisticBoost(slugKey))
-    })
-  }, [slugKey])
+    const update = () => setOptimistic(getOptimisticTotal(slugKey, entry?.total))
+    update()
+    return subscribeOptimisticViews(update)
+  }, [slugKey, entry?.total])
 
-  const entry = viewCounts?.[slugKey]
-  const effectiveBoost = mounted ? boost : 0
-  const rawTotal = entry ? entry.total + effectiveBoost : effectiveBoost > 0 ? effectiveBoost : undefined
+  const rawTotal = mounted && optimistic !== undefined
+    ? Math.max(entry?.total ?? 0, optimistic)
+    : entry?.total
   const total = rawTotal !== undefined ? formatter.format(rawTotal) : undefined
-  const unique = entry ? formatter.format(entry.unique) : undefined
 
   const display =
     total ??
-    (loading ? '…' : '0')
+    (loading ? '…' : '—')
 
   return (
     <span
@@ -50,8 +49,9 @@ const BatchViewCounter: React.FC<BatchViewCounterProps> = ({
         fontSize: '12px',
         fontWeight: '400',
       }}
-      aria-label="views"
-      title={unique ? `총 ${total}회 (고유 ${unique}회)` : undefined}
+      suppressHydrationWarning
+      aria-label={total ? `누적 방문 ${total}회` : '방문 수 확인 중'}
+      title={total ? `누적 방문 ${total}회 · 집계값은 늦게 반영될 수 있습니다.` : '방문 수를 아직 확인하지 못했습니다.'}
     >
       {display} view{rawTotal !== 1 ? 's' : ''}
     </span>

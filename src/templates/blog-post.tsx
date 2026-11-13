@@ -1,9 +1,11 @@
-import React from "react"
+import React, { useEffect } from "react"
 import { graphql, Link } from "gatsby"
 import Layout from "../components/Layout"
 import BatchViewCounter from "../components/BatchViewCounter"
+import DraftBadge from "../components/DraftBadge"
 import GiscusComments from "../components/GiscusComments"
 import { useCachedViewCounts } from "../hooks/useCachedViewCounts"
+import { markOptimisticView } from "../utils/viewCountOptimistic"
 
 interface BlogPostTemplateProps {
   data: {
@@ -15,6 +17,7 @@ interface BlogPostTemplateProps {
     markdownRemark: {
       id: string
       fields: {
+        isDraft: boolean
         slug: string
         slugNoTrailingSlash: string
         analyticsKey: string
@@ -53,7 +56,11 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
   const { previous, next } = data
 
   // 현재 포스트의 캐시된 조회수 가져오기
-  const { viewCounts, loading } = useCachedViewCounts([post.fields.slug])
+  const { viewCounts, loading } = useCachedViewCounts(post.fields.isDraft ? [] : [post.fields.slug])
+
+  useEffect(() => {
+    if (!post.fields.isDraft) markOptimisticView(post.fields.slug)
+  }, [post.fields.slug, post.fields.isDraft])
 
   return (
     <Layout 
@@ -68,6 +75,7 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
         flexDirection: 'column',
         gap: '8px'
       }}>
+        {post.fields.isDraft && <DraftBadge />}
         {/* 카테고리 - 인라인으로 변경 */}
         <span style={{
           display: 'inline-block',
@@ -120,11 +128,11 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
           }}>
             {post.frontmatter.dateFormatted}
           </span>
-          <BatchViewCounter 
+          {!post.fields.isDraft && <BatchViewCounter
             slug={post.fields.slug} 
             viewCounts={viewCounts}
             loading={loading}
-          />
+          />}
         </div>
       </header>
 
@@ -143,13 +151,13 @@ const BlogPostTemplate: React.FC<BlogPostTemplateProps> = ({ data }) => {
       <hr style={{ margin: '40px 0', border: 'none', borderTop: '1px solid #eee' }} />
       
       {/* 댓글 영역 */}
-      <GiscusComments
+      {!post.fields.isDraft && <GiscusComments
         repo="ThinKim90/MyBlog"
         repoId="R_kgDOO3u4Jw"
         category="Announcements"
         categoryId="DIC_kwDOO3u4J84CvfJN"
         discussionTerm={post.fields.analyticsKey}
-      />
+      />}
       
       <nav>
         <ul style={{
@@ -360,6 +368,7 @@ export const pageQuery = graphql`
     markdownRemark(id: { eq: $id }) {
       id
       fields {
+        isDraft
         slug
         slugNoTrailingSlash
         analyticsKey

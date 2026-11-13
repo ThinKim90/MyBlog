@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Giscus from '@giscus/react'
 
 interface GiscusCommentsProps {
-  repo: string
+  repo: React.ComponentProps<typeof Giscus>['repo']
   repoId: string
   category: string
   categoryId: string

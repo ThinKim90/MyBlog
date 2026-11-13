@@ -39,6 +39,9 @@
   "scripts": {
     "build": "gatsby build",
     "develop": "gatsby develop",
+    "develop:preview": "BLOG_PREVIEW_DRAFTS=true gatsby develop --host 127.0.0.1",
+    "test:publishing": "node --test tests/publishing.test.js",
+    "test:views": "node --test tests/view-counts.test.js",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md,css}\"",
     "start": "gatsby develop",
     "serve": "gatsby serve",

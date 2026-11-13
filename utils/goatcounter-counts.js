@@ -1,193 +1,107 @@
 const { canonicalise, toAnalyticsKey } = require('./path-helpers');
+const { parseCount, fetchJSON } = require('./view-count-values');
+const { counts: buildSnapshot = {} } = require('../static/blog-view-counts.json');
 
 const SITE = process.env.GC_SITE || process.env.GATSBY_GC_SITE || 'thin.goatcounter.com';
-const CACHE_TTL_SECONDS = Number(process.env.GC_CACHE_TTL || 120);
-const FAILED_CACHE_TTL_SECONDS = Number(process.env.GC_FAILED_CACHE_TTL || 30);
-const CONCURRENCY_LIMIT = Number(process.env.GC_REQUEST_CONCURRENCY || 4);
+const positive = (value, fallback) => Number(value) > 0 ? Number(value) : fallback;
+const CACHE_TTL_SECONDS = positive(process.env.GC_CACHE_TTL, 900);
+const FAILED_CACHE_TTL_SECONDS = positive(process.env.GC_FAILED_CACHE_TTL, 30);
+const CONCURRENCY_LIMIT = Math.max(1, Math.floor(positive(process.env.GC_REQUEST_CONCURRENCY, 4)));
+const REQUEST_TIMEOUT_MS = positive(process.env.GC_REQUEST_TIMEOUT_MS, 1000);
+const BATCH_TIMEOUT_MS = positive(process.env.GC_BATCH_TIMEOUT_MS, 2500);
 
 const inMemoryCache = new Map();
-
-const nowSeconds = () => Math.floor(Date.now() / 1000);
-
-const isFresh = (entry) => entry && entry.expiresAt > nowSeconds();
-
-const safeDecode = (value) => {
-  try {
-    return decodeURIComponent(value);
-  } catch (error) {
-    return value;
-  }
-};
-
-const stripIndex = (value) => value.replace(/(?:^|\/)index$/, '') || value;
+const inFlight = new Map();
+const resolvedPaths = new Map();
+for (const [slug, entry] of Object.entries(buildSnapshot)) {
+  const total = parseCount(entry.total);
+  if (total === undefined) continue;
+  const key = toAnalyticsKey(slug);
+  if (entry.resolvedPath) resolvedPaths.set(key, entry.resolvedPath);
+  inMemoryCache.set(key, {
+    value: { total, resolved: entry.resolvedPath || key, key, fetchedAt: entry.fetchedAt || 0, failed: false },
+    expiresAt: 0,
+  });
+}
 
 const normaliseForLookup = (input) => {
-  const raw = safeDecode(String(input ?? '/')).trim();
+  let raw = String(input ?? '/');
+  try { raw = decodeURIComponent(raw); } catch { /* Keep malformed paths harmless. */ }
   const canonical = canonicalise(raw);
-  const analyticsKey = toAnalyticsKey(canonical);
-
-  const candidateSet = new Set();
-
-  if (!analyticsKey || analyticsKey === '/') {
-    candidateSet.add('');
-    candidateSet.add('/');
-    candidateSet.add('index');
-  } else {
-    candidateSet.add(analyticsKey);
-    candidateSet.add(stripIndex(analyticsKey));
-    candidateSet.add(`${analyticsKey}/`);
-  }
-
-  if (canonical && canonical !== '/') {
-    const normalized = canonical.replace(/^\/+/, '');
-    candidateSet.add(normalized);
-    candidateSet.add(stripIndex(normalized));
-    candidateSet.add(canonical);
-  }
-
-  const candidates = Array.from(candidateSet).filter(Boolean);
-
-  return {
-    key: analyticsKey || '/',
-    candidates: candidates.length > 0 ? candidates : ['/'],
-  };
+  const key = toAnalyticsKey(canonical);
+  // Primary keys match gatsby-browser.js. Only a missing path merits legacy lookups.
+  const candidates = key === '/' ? ['/', 'index'] : [key, `${key}/`, canonical];
+  return { key, candidates: Array.from(new Set([resolvedPaths.get(key), ...candidates].filter(Boolean))) };
 };
 
-const fetchCountForCandidate = async (candidate) => {
-  const encoded = candidate ? encodeURIComponent(candidate) : '';
-  const url = `https://${SITE}/counter/${encoded}.json`;
-  const response = await fetch(url, { headers: { Accept: 'application/json' } });
-
-  if (!response.ok) {
-    throw new Error(`GoatCounter responded with ${response.status}`);
-  }
-
-  const payload = await response.json();
-  const total =
-    Number.parseInt(payload.count ?? payload.views ?? payload.hits ?? payload.total ?? '0', 10) || 0;
-  const unique =
-    Number.parseInt(
-      payload.count_unique ?? payload.unique ?? payload.unique_views ?? payload.users ?? '0',
-      10,
-    ) || 0;
-
-  return { total, unique, resolved: candidate || '/' };
+const fetchCountForCandidate = async (candidate, timeoutMs) => {
+  const payload = await fetchJSON(
+    `https://${SITE}/counter/${encodeURIComponent(candidate)}.json`,
+    { headers: { Accept: 'application/json' } },
+    timeoutMs,
+  );
+  const total = parseCount(payload.count ?? payload.views ?? payload.hits ?? payload.total);
+  if (total === undefined) throw new Error('Invalid GoatCounter count');
+  // count_unique is an alias of count, not an independent unique-visitor metric.
+  return { total, resolved: candidate, fetchedAt: Date.now() };
 };
 
-const fetchCountForPath = async (path, { useCache = true } = {}) => {
+const fetchCountForPath = (path, { useCache = true, deadline = Date.now() + BATCH_TIMEOUT_MS } = {}) => {
   const { key, candidates } = normaliseForLookup(path);
+  const cached = inMemoryCache.get(key);
+  if (useCache && cached?.expiresAt > Date.now()) return Promise.resolve(cached.value);
+  if (inFlight.has(key)) return inFlight.get(key);
 
-  if (useCache) {
-    const cached = inMemoryCache.get(key);
-    if (isFresh(cached)) {
-      return cached.value;
-    }
-  }
-
-  const decoded = safeDecode(path ?? '/').replace(/^\/+/, '');
-  const attempts = Array.from(new Set([...candidates, decoded]));
-
-  for (const candidate of attempts) {
-    if (candidate === undefined) {
-      continue;
-    }
-    try {
-      const value = await fetchCountForCandidate(candidate);
-      const enriched = {
-        ...value,
-        key,
-        requested: path,
-        failed: false,
-      };
-      if (useCache) {
-        inMemoryCache.set(key, {
-          value: enriched,
-          expiresAt: nowSeconds() + CACHE_TTL_SECONDS,
-        });
+  const request = (async () => {
+    for (const candidate of candidates) {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) break;
+      try {
+        const value = { ...await fetchCountForCandidate(candidate, Math.min(REQUEST_TIMEOUT_MS, remaining)), key, failed: false };
+        resolvedPaths.set(key, candidate);
+        inMemoryCache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_SECONDS * 1000 });
+        return value;
+      } catch (error) {
+        // A timeout, 429 or 5xx affects every alias; don't multiply failing requests.
+        if (error.status !== 404) break;
       }
-      return enriched;
-    } catch (error) {
-      // 다음 후보로 폴백
     }
-  }
-
-  const fallback = {
-    total: 0,
-    unique: 0,
-    resolved: attempts[0] || '/',
-    key,
-    requested: path,
-    failed: true,
-  };
-
-  if (useCache) {
-    inMemoryCache.set(key, {
-      value: fallback,
-      expiresAt: nowSeconds() + FAILED_CACHE_TTL_SECONDS,
-    });
-  }
-
-  return fallback;
-};
-
-const chunk = (items, size) => {
-  if (items.length <= size) {
-    return [items];
-  }
-  const groups = [];
-  for (let i = 0; i < items.length; i += size) {
-    groups.push(items.slice(i, i + size));
-  }
-  return groups;
+    const fallback = { ...cached?.value, key, failed: true };
+    inMemoryCache.set(key, { value: fallback, expiresAt: Date.now() + FAILED_CACHE_TTL_SECONDS * 1000 });
+    return fallback;
+  })().finally(() => inFlight.delete(key));
+  inFlight.set(key, request);
+  return request;
 };
 
 const fetchCountsForPaths = async (paths, options = {}) => {
   const uniquePaths = Array.from(new Set(paths.filter(Boolean)));
   const results = {};
-
-  const batches = chunk(uniquePaths, CONCURRENCY_LIMIT);
-  for (const batch of batches) {
-    const batchResults = await Promise.all(
-      batch.map((path) => fetchCountForPath(path, options)),
-    );
-    batch.forEach((path, index) => {
-      results[path] = batchResults[index];
-    });
-  }
-
+  const deadline = Date.now() + BATCH_TIMEOUT_MS;
+  let index = 0;
+  // A worker pool avoids waiting for a whole group before starting the next path.
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY_LIMIT, uniquePaths.length) }, async () => {
+    while (index < uniquePaths.length) {
+      const path = uniquePaths[index++];
+      results[path] = await fetchCountForPath(path, { ...options, deadline });
+    }
+  }));
   return results;
 };
 
-/**
- * 빌드 타임 스냅샷용: slugNoTrailingSlash 키로 정규화된 조회수 맵 반환
- */
 const fetchCountsForPosts = async (posts, options = {}) => {
-  const analyticsKeys = posts.map((post) => post.analyticsKey).filter(Boolean);
-  const raw = await fetchCountsForPaths(analyticsKeys, options);
-  const builtAt = Date.now();
+  const raw = await fetchCountsForPaths(posts.map(post => post.analyticsKey).filter(Boolean), options);
   const counts = {};
-
-  posts.forEach((post) => {
+  for (const post of posts) {
     const record = raw[post.analyticsKey];
-    if (!record || record.failed) {
-      return;
-    }
-
+    if (!record || parseCount(record.total) === undefined) continue;
     counts[post.slugKey] = {
       total: record.total,
-      unique: record.unique,
       resolvedPath: record.resolved || post.analyticsKey,
-      fetchedAt: builtAt,
+      fetchedAt: record.fetchedAt || 0,
     };
-  });
-
+  }
   return counts;
 };
 
-module.exports = {
-  SITE,
-  fetchCountForPath,
-  fetchCountsForPaths,
-  fetchCountsForPosts,
-  normaliseForLookup,
-};
+module.exports = { SITE, fetchCountForPath, fetchCountsForPaths, fetchCountsForPosts, normaliseForLookup };

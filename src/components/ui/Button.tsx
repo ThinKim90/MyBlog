@@ -150,14 +150,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       target.style.textDecoration = 'none'
     }
 
-    const handleFocus = (e: React.FocusEvent<HTMLButtonElement>) => {
-      // 포커스 시 추가 스타일 없음 (보더/그림자 제거)
-    }
-
-    const handleBlur = (e: React.FocusEvent<HTMLButtonElement>) => {
-      // 블러 시 추가 스타일 없음
-    }
-
     return (
       <button
         ref={ref}
@@ -165,8 +157,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={className}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
         disabled={disabled || loading}
         {...props}
       >
