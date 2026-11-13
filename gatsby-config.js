@@ -8,6 +8,16 @@
  * @type {import('gatsby').GatsbyConfig}
  */
 const { isDraftPreview } = require('./utils/publication');
+const notionTestContentPath = `${__dirname}/.notion-test/contents`;
+const notionContentPath = process.env.BLOG_NOTION_PREVIEW === 'true'
+  ? `${__dirname}/.notion-cache/preview/posts`
+  : `${__dirname}/notion-content/posts`;
+if (process.env.BLOG_NOTION_TEST === 'true' && !require('fs').existsSync(notionTestContentPath)) {
+  throw new Error('Notion 테스트 글이 없습니다. npm run notion:sync를 먼저 실행하세요.');
+}
+if (process.env.BLOG_NOTION_PREVIEW === 'true' && !require('fs').existsSync(notionContentPath)) {
+  throw new Error('Notion 작업본이 없습니다. npm run notion:pull을 먼저 실행하세요.');
+}
 
 module.exports = {
   siteMetadata: {
@@ -38,6 +48,14 @@ module.exports = {
         path: `${__dirname}/contents`,
       },
     },
+    ...(process.env.BLOG_NOTION_TEST === 'true' ? [{
+      resolve: 'gatsby-source-filesystem',
+      options: { name: 'notion-test', path: notionTestContentPath },
+    }] : []),
+    ...(require('fs').existsSync(notionContentPath) ? [{
+      resolve: 'gatsby-source-filesystem',
+      options: { name: 'notion-cms', path: notionContentPath },
+    }] : []),
     {
       resolve: `gatsby-transformer-remark`,
       options: {

@@ -1,0 +1,90 @@
+[
+  {
+    "id": 1,
+    "title": "Dodge Game",
+    "description": "간단한 회피 게임으로 마우스로 캐릭터를 조작하여 장애물을 피하는 게임입니다.",
+    "url": "https://dodge-game-phi.vercel.app/",
+    "image": null,
+    "tags": ["Game", "JavaScript", "Canvas"],
+    "icon": "🎮",
+    "status": "live"
+  },
+  {
+    "id": 2,
+    "title": "Odd Color Out",
+    "description": "제한 시간 안에 다른 밝기의 칩을 찾아 최고 기록에 도전하는 색상 구별 게임입니다.",
+    "url": "https://odd-color-out-five.vercel.app/",
+    "image": null,
+    "tags": ["Game", "React", "Color Perception"],
+    "icon": "🎨",
+    "status": "live",
+    "relatedPost": "odd-color-out-review"
+  },
+  {
+    "id": 3,
+    "title": "진짜 고수",
+    "description": "트렌드에 맞춘 진짜 고수의 이유있는 선택. 매일 아침 7시, 남들과 다른 투자 아이디어를 만나보세요.",
+    "url": "https://jinjja-gosu.vercel.app/",
+    "image": null,
+    "tags": ["Service", "AI", "Investment"],
+    "icon": "🧠",
+    "status": "close",
+    "relatedPost": "jinjja-gosu-review"
+  },
+  {
+    "id": 4,
+    "title": "ASCII Studio",
+    "description": "이미지나 GIF를 90년대 맥 터미널 감성의 ASCII 아트로 변환하는 크리에이티브 스튜디오입니다.",
+    "url": "https://ascii-studio-ten.vercel.app/",
+    "image": null,
+    "tags": ["Tool", "ASCII Art", "Creative"],
+    "icon": "✏️",
+    "status": "live"
+  },
+  {
+    "id": 5,
+    "title": "StellarPath",
+    "description": "집중할 때마다 별이 생기는 생산성 앱. 매일의 노력이 쌓여 나만의 우주를 만듭니다.",
+    "url": "https://stellar-path.vercel.app/",
+    "image": null,
+    "tags": ["Productivity", "Focus", "Visualization"],
+    "icon": "✨",
+    "status": "live",
+    "relatedPost": "stellarpath-review"
+  },
+  {
+    "id": 6,
+    "title": "취향노트",
+    "description": "커피 원두 시음 기록 앱. 내 커피 취향을 기록하고 선호하는 맛을 찾아갈 수 있습니다.",
+    "url": "https://taste-notes-sandy.vercel.app/",
+    "image": null,
+    "tags": ["Coffee", "Notes", "Tasting"],
+    "icon": "☕",
+    "status": "live",
+    "relatedPost": "taste-notes-review"
+  },
+  {
+    "id": 7,
+    "title": "EdgeCase AI",
+    "description": "Figma 프로토타입 흐름을 따라가며 빠진 화면과 상태를 AI가 찾아주는 플러그인입니다.",
+    "url": "https://www.figma.com/community/plugin/1639240568361479668",
+    "image": null,
+    "tags": ["Figma Plugin", "AI", "Design"],
+    "icon": "🔍",
+    "status": "live",
+    "relatedPost": "edgecase-ai-review",
+    "embedPreview": false,
+    "linkLabel": "플러그인 보기"
+  },
+  {
+    "id": 8,
+    "title": "파발마",
+    "description": "편지를 말에 실어 친구 동네까지 보내는 느린 메시지 앱입니다. 거리만큼 시간이 걸려 도착하고, 편지를 주고받을수록 말이 자랍니다.",
+    "url": "https://pabalma-app.vercel.app/",
+    "image": null,
+    "tags": ["Service", "Letter", "Communication"],
+    "icon": "🐎",
+    "status": "live",
+    "relatedPost": "pabalma-vibecoding-review"
+  }
+]

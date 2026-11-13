@@ -18,7 +18,7 @@ test('preview is explicit and cannot enable drafts in production', () => {
   assert.deepEqual(allowedDraftStates({ BLOG_PREVIEW_DRAFTS: 'true' }), [false]);
 });
 
-test('draft detail pages, redirects, navigation and home use the same policy across modes', async () => {
+test('draft detail pages, redirects, navigation and listing pages use the same policy across modes', async () => {
   const originalEnv = { NODE_ENV: process.env.NODE_ENV, BLOG_PREVIEW_DRAFTS: process.env.BLOG_PREVIEW_DRAFTS };
   const posts = [false, true, false].map((draft, index) => ({
     id: `post-${index}`,
@@ -58,11 +58,13 @@ test('draft detail pages, redirects, navigation and home use the same policy acr
       assert.equal(pages.at(-1).context.nextPostId, null);
       assert.equal(redirects.some(redirect => redirect.fromPath === '/old-1/'), expectedIds.includes('post-1'));
 
-      let home;
-      onCreatePage({ page: { path: '/', context: { draftPreview: !isDraftPreview(), existing: 'kept' } }, actions: { createPage: page => { home = page; } } });
-      assert.deepEqual(home.context.allowedDraftStates, allowedDraftStates());
-      assert.equal(home.context.existing, 'kept');
-      onCreatePage({ page: home, actions: { createPage: () => assert.fail('onCreatePage must not recurse') } });
+      for (const pagePath of ['/', '/playground/', '/playground']) {
+        let page;
+        onCreatePage({ page: { path: pagePath, context: { draftPreview: !isDraftPreview(), existing: 'kept' } }, actions: { createPage: next => { page = next; } } });
+        assert.deepEqual(page.context.allowedDraftStates, allowedDraftStates());
+        assert.equal(page.context.existing, 'kept');
+        onCreatePage({ page, actions: { createPage: () => assert.fail('onCreatePage must not recurse') } });
+      }
     }
   } finally {
     for (const [key, value] of Object.entries(originalEnv)) {

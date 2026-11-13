@@ -1,0 +1,66 @@
+name: Publish Notion posts
+
+on:
+  schedule:
+    - cron: '2-57/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: notion-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - name: Check publication requests
+        id: requests
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+        run: node scripts/notion-poll.js
+      - name: Install dependencies
+        if: steps.requests.outputs.pending == 'true'
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Import requested versions
+        if: steps.requests.outputs.pending == 'true'
+        id: sync
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+        run: npm run notion:publish
+      - name: Validate publication
+        if: steps.sync.outputs.changed == 'true'
+        run: |
+          npm test
+          npx tsc --noEmit
+          npm run build
+      - name: Save public snapshots and trigger Netlify
+        if: steps.sync.outputs.changed == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add notion-content
+          git commit -m 'Publish requested Notion versions'
+          git push origin HEAD:main
+      - name: Confirm production publication
+        if: steps.sync.outputs.changed == 'true'
+        run: node scripts/wait-notion-deploy.js
+      - name: Keep infrequent publication schedules active
+        if: steps.requests.outputs.pending == 'false'
+        run: |
+          age=$(( $(date +%s) - $(git log -1 --format=%ct) ))
+          if [ "$age" -ge 2592000 ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit --allow-empty -m 'Keep Notion publishing active [skip netlify]'
+            git push origin HEAD:main
+          fi

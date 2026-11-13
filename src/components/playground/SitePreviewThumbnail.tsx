@@ -7,6 +7,7 @@ interface SitePreviewThumbnailProps {
   image?: string | null
   icon: string
   status?: "live" | "close"
+  allowIframe?: boolean
 }
 
 const PREVIEW_HEIGHT = 200
@@ -19,16 +20,17 @@ export const SitePreviewThumbnail: React.FC<SitePreviewThumbnailProps> = ({
   image,
   icon,
   status = "live",
+  allowIframe = true,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [imageFailed, setImageFailed] = useState(false)
 
-  const showIframe = !image && !imageFailed
+  const showIframe = allowIframe && !image && !imageFailed
 
   useEffect(() => {
-    if (image) return
+    if (image || !allowIframe) return
 
     const container = containerRef.current
     if (!container) return
@@ -45,17 +47,17 @@ export const SitePreviewThumbnail: React.FC<SitePreviewThumbnailProps> = ({
 
     observer.observe(container)
     return () => observer.disconnect()
-  }, [image])
+  }, [image, allowIframe])
 
   useEffect(() => {
-    if (!isVisible || image) return
+    if (!isVisible || image || !allowIframe) return
 
     const timeout = window.setTimeout(() => {
       setIsLoading(false)
     }, 6000)
 
     return () => window.clearTimeout(timeout)
-  }, [isVisible, image])
+  }, [isVisible, image, allowIframe])
 
   return (
     <div
@@ -130,7 +132,7 @@ export const SitePreviewThumbnail: React.FC<SitePreviewThumbnailProps> = ({
         </div>
       )}
 
-      {imageFailed && (
+      {(imageFailed || (!image && !allowIframe)) && (
         <div
           style={{
             position: "absolute",

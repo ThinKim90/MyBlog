@@ -1,0 +1,6 @@
+{
+  "dataSourceId": "27212f7c-14b7-808a-9f8e-000bbdd28c1f",
+  "requestProperty": "발행 요청 시각",
+  "excludedPageIds": ["41712f7c-14b7-8120-b615-d5d33a83f9bc"],
+  "productionUrl": "https://thinblog.netlify.app"
+}

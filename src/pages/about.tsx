@@ -1,30 +1,30 @@
 import React from "react"
 import { useStaticQuery, graphql } from "gatsby"
 import Layout from "../components/Layout"
+import ContactIcon from "../components/ContactIcon"
 
 const AboutPage: React.FC = () => {
   const data = useStaticQuery(graphql`
     query AboutPageQuery {
       site {
         siteMetadata {
-          title
           contact {
             email
             github
+            linkedin
           }
         }
       }
     }
   `)
   
-  const siteTitle = data.site.siteMetadata.title
   const contact = data.site.siteMetadata.contact
   const designSkills = ['Figma', 'Prototyping', 'Design System', 'User Research']
   const tools = ['Figma', 'Notion', 'GPT', 'Cursor', 'NotebookLM', 'Claude Code']
 
   return (
     <Layout
-      title={`About - ${siteTitle}`}
+      title="About"
       description="UX/UI 디자이너 Thin에 대한 소개 페이지입니다. 기술 스택과 경험을 확인해보세요."
     >
       {/* 통합된 About 레이아웃 */}
@@ -263,7 +263,7 @@ const AboutPage: React.FC = () => {
                     e.currentTarget.style.transform = 'translateY(0)'
                   }}
                 >
-                  <span style={{ fontSize: '18px' }}>📧</span>
+                  <ContactIcon name="email" size={18} />
                   이메일 보내기
                 </a>
                 
@@ -292,8 +292,36 @@ const AboutPage: React.FC = () => {
                     e.currentTarget.style.transform = 'translateY(0)'
                   }}
                 >
-                  <span style={{ fontSize: '18px' }}>💻</span>
+                  <ContactIcon name="github" size={18} />
                   GitHub 방문
+                </a>
+                <a
+                  href={contact.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: '#8b7d6b',
+                    color: 'white',
+                    padding: '12px 20px',
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                    fontSize: '16px',
+                    transition: 'all 0.3s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#6b645c'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#8b7d6b'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}
+                >
+                  <ContactIcon name="linkedin" size={18} />
+                  LinkedIn 방문
                 </a>
               </div>
             </div>
@@ -304,4 +332,4 @@ const AboutPage: React.FC = () => {
   )
 }
 
-export default AboutPage 
+export default AboutPage

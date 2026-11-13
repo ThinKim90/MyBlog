@@ -197,10 +197,6 @@ export const GlobalStyles: React.FC = () => {
       text-decoration-color: #4a453e;
     }
     
-    a:focus {
-      outline: none;
-    }
-
     /* 괄호로 감싼 텍스트 스타일 - CSS만으로 처리 */
     .blog-post-content p,
     .blog-post-content li {
@@ -450,23 +446,15 @@ export const GlobalStyles: React.FC = () => {
       }
     }
 
-    /* 포커스 관리 */
-    *:focus {
-      outline: none;
+    /* 키보드 탐색 위치를 표시하고 기존 보더·그림자·레이아웃을 유지합니다. */
+    :focus-visible {
+      outline: 3px solid var(--color-interactive-focus);
+      outline-offset: 3px;
     }
-    
-    *:focus-visible {
+
+    /* 포인터로 선택한 링크·버튼에는 키보드용 표시를 남기지 않습니다. */
+    :focus:not(:focus-visible) {
       outline: none;
-    }
-    
-    /* 버튼 및 링크 포커스 시 보더 제거 */
-    button:focus,
-    button:focus-visible,
-    a:focus,
-    a:focus-visible {
-      outline: none !important;
-      border: none !important;
-      box-shadow: none !important;
     }
 
     /* 선택 영역 스타일 */

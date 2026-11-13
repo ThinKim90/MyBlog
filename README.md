@@ -1,5 +1,8 @@
 # Thin Blog 글 작성과 발행
 
+Notion CMS 단일 글 검증은 [Notion 테스트 가이드](docs/notion-cms-test.md)를 참고하세요.
+운영 글 작성과 자동 배포는 [Notion CMS 사용법](docs/notion-cms.md)을 참고하세요.
+
 글은 `contents/`의 Markdown 파일에서 수정합니다. 파일 상단에 다음처럼
 `draft: true`를 넣으면 초안이 됩니다. `draft`를 생략하거나 `false`로 바꾸면 발행 대상입니다.
 값에는 따옴표를 붙이지 마세요.

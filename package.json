@@ -30,6 +30,7 @@
   "devDependencies": {
     "@types/react-helmet": "^6.1.11",
     "prettier": "^2.8.8",
+    "remark": "^13.0.0",
     "typescript": "^5.8.3"
   },
   "keywords": [
@@ -46,7 +47,15 @@
     "start": "gatsby develop",
     "serve": "gatsby serve",
     "clean": "gatsby clean",
-    "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1"
+    "test": "node --test tests/*.test.js",
+    "notion:check": "node scripts/notion-test-sync.js --check",
+    "notion:sync": "node scripts/notion-test-sync.js",
+    "develop:notion": "BLOG_NOTION_TEST=true BLOG_PREVIEW_DRAFTS=true gatsby develop --host 127.0.0.1",
+    "build:notion-test": "BLOG_NOTION_TEST=true gatsby build",
+    "test:notion": "node --test tests/notion-sync.test.js",
+    "notion:pull": "node scripts/notion-cms.js",
+    "notion:publish": "node scripts/notion-cms.js --publish",
+    "develop:cms": "BLOG_NOTION_PREVIEW=true BLOG_PREVIEW_DRAFTS=true gatsby develop --host 127.0.0.1"
   },
   "repository": {
     "type": "git",

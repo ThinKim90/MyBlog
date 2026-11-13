@@ -147,7 +147,8 @@ const Header: React.FC<HeaderProps> = ({
             gap: '4px',
             overflowX: 'auto',
             overflowY: 'hidden',
-            paddingBottom: '4px'
+            // 스크롤 영역 가장자리에서도 포커스 테두리가 잘리지 않도록 확보합니다.
+            padding: '6px'
           }}
           className="category-filter-container"
           >
@@ -165,7 +166,6 @@ const Header: React.FC<HeaderProps> = ({
                   fontSize: '14px',
                   fontWeight: selectedCategory === category ? '600' : '400',
                   transition: 'all 0.3s ease',
-                  outline: 'none',
                   boxShadow: 'none',
                   WebkitAppearance: 'none',
                   MozAppearance: 'none',

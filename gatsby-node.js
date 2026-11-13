@@ -103,7 +103,7 @@ exports.onPreBuild = async ({ graphql, reporter }) => {
 
 // Page queries use the same publication policy as detail-page generation.
 exports.onCreatePage = ({ page, actions }) => {
-  if (page.path !== '/') return;
+  if (!['/', '/playground/', '/playground'].includes(page.path)) return;
   const draftPreview = isDraftPreview();
   if (page.context.draftPreview === draftPreview) return;
   actions.createPage({
@@ -156,6 +156,14 @@ exports.createPages = async ({ graphql, actions, reporter }) => {
   }
 
   const posts = result.data.allMarkdownRemark.nodes;
+  const usedSlugs = new Set();
+  for (const post of posts) {
+    if (usedSlugs.has(post.fields.slug)) {
+      reporter.panicOnBuild(`글 주소가 중복됩니다: ${post.fields.slug}. 기존 글의 주소와 CMS의 Slug를 확인하세요.`);
+      return;
+    }
+    usedSlugs.add(post.fields.slug);
+  }
 
   // Create blog posts pages
   if (posts.length > 0) {
@@ -206,7 +214,7 @@ exports.onCreateNode = ({ node, actions, getNode }) => {
     const canonicalSlug = explicitSlug || fileSlug;
 
     const redirectSet = new Set();
-    if (fileSlug && fileSlug !== canonicalSlug) {
+    if (!node.frontmatter?.notionId && fileSlug && fileSlug !== canonicalSlug) {
       redirectSet.add(fileSlug);
     }
 
@@ -251,4 +259,10 @@ exports.onCreateNode = ({ node, actions, getNode }) => {
       value: Array.from(redirectSet),
     });
   }
+};
+
+exports.onPostBuild = async () => {
+  const { readManifest, publicStatus } = require('./utils/notion-cms');
+  const status = publicStatus(await readManifest(__dirname));
+  fs.writeFileSync(path.join(__dirname, 'public', 'cms-publication.json'), JSON.stringify(status));
 };
