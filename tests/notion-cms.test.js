@@ -85,6 +85,18 @@ test('Published without a request never publishes, and test pages remain exclude
   assert.deepEqual((await readManifest(h.root)).pages, {});
 });
 
+test('an unfinished untitled draft does not block another requested article', async t => {
+  const h = await setup(t);
+  const unfinished = page(id2, 'Draft', null, 'unfinished');
+  unfinished.properties.Title.title = [];
+  h.state.pages.push(unfinished);
+  assert.equal((await h.sync()).updated.length, 1);
+  assert.match(await h.read(), /처음 본문/);
+  const preview = await h.sync('preview');
+  assert.equal(preview.updated.length, 1);
+  assert.ok(preview.skipped.some(item => item.id === id2));
+});
+
 test('Draft removes the public snapshot while retaining its request watermark; stale requests do not republish', async t => {
   const h = await setup(t);
   await h.sync();

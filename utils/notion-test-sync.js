@@ -8,11 +8,8 @@ const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const TEST_SLUG = '/notion-cms-test/';
 
 
-function metadataFrom(page) {
+function draftStateFrom(page) {
   const properties = Object.entries(page.properties || {});
-  const titleField = properties.find(([, value]) => value.type === 'title');
-  const title = titleField?.[1].title?.map(item => item.plain_text ?? item.text?.content ?? '').join('').trim();
-  if (!title) throw new Error('테스트 글 제목을 읽지 못했습니다.');
   const draftFields = properties.filter(([key]) => ['draft', '초안'].includes(key.toLowerCase()));
   if (draftFields.some(([, value]) => value.type !== 'checkbox' || typeof value.checkbox !== 'boolean')) {
     throw new Error('Notion의 Draft 또는 초안 속성을 체크박스 유형으로 설정하세요.');
@@ -27,7 +24,15 @@ function metadataFrom(page) {
   const statusDrafts = statusFields.map(([, value]) => value[value.type]?.name !== 'Published');
   const explicitDrafts = [...draftFields.map(([, value]) => value.checkbox), ...statusDrafts];
   if (new Set(explicitDrafts).size > 1) throw new Error('Notion의 초안 체크와 발행 상태가 서로 다릅니다.');
-  const draft = page.archived === true || page.in_trash === true || (explicitDrafts[0] ?? true);
+  return page.archived === true || page.in_trash === true || (explicitDrafts[0] ?? true);
+}
+
+function metadataFrom(page) {
+  const properties = Object.entries(page.properties || {});
+  const titleField = properties.find(([, value]) => value.type === 'title');
+  const title = titleField?.[1].title?.map(item => item.plain_text ?? item.text?.content ?? '').join('').trim();
+  if (!title) throw new Error('Notion 글 제목을 읽지 못했습니다.');
+  const draft = draftStateFrom(page);
   const dateField = properties.find(([key, value]) => ['date', '작성일'].includes(key.toLowerCase()) && value.type === 'date');
   const date = (dateField?.[1].date?.start || page.created_time)?.slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) throw new Error('Notion 글의 작성일을 읽지 못했습니다.');
@@ -189,4 +194,4 @@ async function syncTestPage({ request, pageId, outputRoot, fetchImpl = fetch, ch
   return report;
 }
 
-module.exports = { pageIdFrom, metadataFrom, createNotionClient, normaliseMarkdown, imageURL, downloadImage, preparePage, syncTestPage, TEST_SLUG };
+module.exports = { pageIdFrom, draftStateFrom, metadataFrom, createNotionClient, normaliseMarkdown, imageURL, downloadImage, preparePage, syncTestPage, TEST_SLUG };

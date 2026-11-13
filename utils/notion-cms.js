@@ -1,7 +1,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { metadataFrom, preparePage } = require('./notion-test-sync');
+const { draftStateFrom, metadataFrom, preparePage } = require('./notion-test-sync');
 const { pageIdFrom, listPages } = require('./notion-api');
 
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -94,12 +94,11 @@ async function syncCms({ root, request, config, mode = 'preview', fetchImpl = fe
       const id = pageIdFrom(page.id);
       seen.add(id);
       const previous = next.pages[id];
-      const metadata = metadataFrom(page);
       const remove = async () => {
         await fs.rm(path.join(staging, 'posts', id), { recursive: true, force: true });
         if (previous?.published) { next.pages[id] = { ...previous, published: false }; report.removed.push(previous.slug); }
       };
-      if (mode === 'publish' && (metadata.draft || excluded.has(id))) {
+      if (mode === 'publish' && (excluded.has(id) || draftStateFrom(page))) {
         await remove();
         report.skipped.push({ id, reason: excluded.has(id) ? '테스트 전용 글' : '초안' });
         continue;
@@ -107,6 +106,13 @@ async function syncCms({ root, request, config, mode = 'preview', fetchImpl = fe
       const requestedAt = mode === 'publish' ? requestTime(page, config.requestProperty) : null;
       if (mode === 'publish' && (!requestedAt || (previous?.requestedAt && Date.parse(requestedAt) <= Date.parse(previous.requestedAt)))) {
         report.skipped.push({ id, reason: '새 발행 요청 없음' });
+        continue;
+      }
+      let metadata;
+      try { metadata = metadataFrom(page); }
+      catch (error) {
+        if (mode === 'publish') throw error;
+        report.skipped.push({ id, reason: error.message });
         continue;
       }
       const slug = slugFor(page, previous);
