@@ -3,6 +3,9 @@ title: "Notion CMS 연동하기(1) - 실패 기록"
 date: "2025-09-22"
 description: "Notion CMS 도입 시도와 실패 원인 분석."
 category: "AI 활용 - 바이브코딩"
+slug: "/notion-cms-01-fail/"
+draft: false
+notionId: "27412f7c-14b7-80da-9683-c6099135f3fb"
 ---
 
 블로그 구현은 마쳤으나, 매번 md 파일을 생성하여 새롭게 배포하는 과정이 번거로워 CMS 를 구현하고 자동으로 글이 올라가도록 적용하고 싶었다.

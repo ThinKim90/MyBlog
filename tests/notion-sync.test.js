@@ -193,6 +193,15 @@ test('untrusted image hosts, redirects and non-images fail without publishing th
   await assert.rejects(downloadImage(photoURL, async () => new Response('<script>bad</script>')), /사진 다운로드/);
 });
 
+test('Notion Markdown v2 inline emphasis in links and quotes preserves ordinary article formatting', async t => {
+  const h = await harness(t);
+  h.state.markdown = '[<b>Decap CMS</b>](https://www.netlify.com/integrations/decap/)\n\n> 다음번엔 <b>작은 성공</b>부터\n\n<i>기울임</i> <s>취소선</s> <u>밑줄</u>\n\n```html\n<b>코드 예시</b>\n```';
+  await h.sync();
+  assert.ok((await h.read()).includes(h.state.markdown));
+  assert.throws(() => normaliseMarkdown('<b onclick="run()">지원하지 않는 속성</b>'), /전용 서식/);
+  assert.throws(() => normaliseMarkdown('<span color="red">색상</span>'), /전용 서식/);
+});
+
 test('credentials, permissions and retry failures are distinguishable without exposing secret values', async () => {
   for (const [status, reason] of [[401, /키/], [403, /권한/], [404, /접근 권한/]]) {
     const request = createNotionClient({ token: 'secret-key', fetchImpl: async () => new Response('secret response', { status }) });

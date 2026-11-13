@@ -71,6 +71,10 @@ function normaliseMarkdown(markdown) {
       return;
     } else if (/^<p\s*\/>\s*$/.test(value)) {
       edits.push({ start: node.position.start.offset, end: node.position.end.offset, value: '\n' });
+    } else if (/^<\/?(?:b|i|s|u)>$/.test(value)) {
+      // Markdown v2 exports ordinary inline emphasis as these attribute-free tags.
+      // Keep them intact so Gatsby also preserves formatting at word/space boundaries.
+      return;
     } else {
       throw new Error('현재 동기화는 일반 본문·제목·목록·사진·코드 블록만 지원합니다. Notion 전용 서식이나 임베드를 제거한 뒤 다시 실행하세요.');
     }
