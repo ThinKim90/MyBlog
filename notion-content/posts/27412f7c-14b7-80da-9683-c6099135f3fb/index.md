@@ -1,5 +1,5 @@
 ---
-title: "Notion CMS 연동하기(1) - 실패 기록"
+title: "Notion CMS 연동하기(1) - 실패 기록 테스트 검토"
 date: "2025-09-22"
 description: "Notion CMS 도입 시도와 실패 원인 분석."
 category: "AI 활용 - 바이브코딩"
