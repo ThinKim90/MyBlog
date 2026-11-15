@@ -53,7 +53,7 @@ GitHub Secret도 함께 바꿔야 합니다. Netlify에는 이 키를 전달하�
 
 1. GitHub에서 `MyBlog` 저장소만 선택한 fine-grained personal access token을 발급합니다.
    Repository permissions는 `Actions: Read and write`만 추가합니다. 기본 `Metadata: Read` 외에
-   Contents나 Secrets 권한은 추가하지 않습니다.
+   Contents나 Secrets 권한은 추가하지 않습니다. 사용자 요청에 따라 만료는 `No expiration`으로 설정합니다.
 2. Netlify `thinblog` 프로젝트의 환경 변수에 `NOTION_PUBLISH_GITHUB_TOKEN`을 등록하고
    `Contains secret values`를 켭니다. 운영(production) 컨텍스트에만 값을 넣고 나머지는 비웁니다.
    현재 무료 요금제는 비밀 값의 세부 범위를 선택할 수 없어 운영의 Builds·Functions·Runtime에서
@@ -61,8 +61,8 @@ GitHub Secret도 함께 바꿔야 합니다. Netlify에는 이 키를 전달하�
    토큰을 Git이나 본문에 넣지 않습니다.
 3. 운영에 재배포해 새 환경 변수를 적용합니다. Functions 화면에서 이 함수의 Scheduled 표시와
    예약 로그를 확인합니다. 배포 미리보기에서는 자동 예약이 실행되지 않습니다.
-4. 토큰 만료 전에 새 토큰을 같은 환경 변수에 등록하고 다시 배포합니다. 인증이 만료되거나
-   GitHub 호출이 실패하면 함수가 오류를 기록하며, 오류 응답이나 인증 값은 로그에 출력하지 않습니다.
+4. 토큰을 폐기하거나 교체할 때는 새 토큰을 같은 환경 변수에 등록하고 다시 배포합니다.
+   GitHub 인증이나 호출이 실패하면 함수가 오류를 기록하며, 오류 응답이나 인증 값은 로그에 출력하지 않습니다.
 
 Netlify는 저장소와 워크플로가 고정된 GitHub API만 호출합니다. 글 원문과 Notion API 키는
 이 함수에 전달하지 않으며, 공개 URL로 이 예약 함수를 호출할 수도 없습니다.
