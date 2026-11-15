@@ -33,8 +33,14 @@ Notion이 요청 시각을 분 단위로 기록하므로 같은 분에 다시 �
 
 ## 반영 주기
 
-GitHub Actions가 UTC 기준 매시 2, 7, 12…57분에 확인합니다. 새 요청이 없으면 의존성 설치와
-배포를 건너뜁니다. 5분 간격 확인에 빌드·배포 시간이 추가되며 GitHub 대기열에 따라 더 늦어질 수 있습니다.
+Netlify의 `poll-notion-publication` Scheduled Function이 5분마다 GitHub 발행 작업을 실행하도록 구성합니다.
+이 연결은 아래 전용 토큰을 등록하고 운영에 배포한 뒤 활성화됩니다. GitHub의 자체 예약 실행도
+보조 경로로 유지합니다. 2026-11-13~16 실제 GitHub 예약 실행은 약 3~7시간 간격으로 지연되어
+GitHub cron만으로는 5분 안팎의 반영을 기대할 수 없었습니다.
+
+새 요청이 없으면 의존성 설치와 배포를 건너뜁니다. 이미 대기하거나 실행 중인 발행 작업이 있으면
+Netlify는 새 실행을 추가하지 않습니다. 5분 간격 확인에 빌드·배포 시간이 추가되며 대기열에 따라
+더 늦어질 수 있습니다. GitHub 실행 제목의 `netlify-schedule`로 Netlify가 호출한 실행을 구분합니다.
 즉시 처리하고 싶으면 위 GitHub 페이지의 **Run workflow**로 같은 작업을 실행할 수 있습니다.
 변경 저장 후에는 공개 사이트의 `/cms-publication.json`을 확인해 Netlify 반영까지 검증합니다.
 
@@ -42,6 +48,24 @@ GitHub Actions가 UTC 기준 매시 2, 7, 12…57분에 확인합니다. 새 요
 Notion 읽기 키는 GitHub 저장소의 `NOTION_API_KEY` Actions Secret에만 등록합니다.
 별도 Notion 연결의 권한은 읽기만 있으면 됩니다. 키를 교체하면 로컬 `.env.notion`과
 GitHub Secret도 함께 바꿔야 합니다. Netlify에는 이 키를 전달하지 않습니다.
+
+### Netlify 예약 실행 연결
+
+1. GitHub에서 `MyBlog` 저장소만 선택한 fine-grained personal access token을 발급합니다.
+   Repository permissions는 `Actions: Read and write`만 추가합니다. 기본 `Metadata: Read` 외에
+   Contents나 Secrets 권한은 추가하지 않습니다.
+2. Netlify `thinblog` 프로젝트의 환경 변수에 `NOTION_PUBLISH_GITHUB_TOKEN`을 등록하고
+   `Contains secret values`를 켭니다. 운영(production) 컨텍스트에만 값을 넣고 나머지는 비웁니다.
+   현재 무료 요금제는 비밀 값의 세부 범위를 선택할 수 없어 운영의 Builds·Functions·Runtime에서
+   접근할 수 있습니다. 범위 선택을 지원하는 요금제에서는 Functions만 선택합니다.
+   토큰을 Git이나 본문에 넣지 않습니다.
+3. 운영에 재배포해 새 환경 변수를 적용합니다. Functions 화면에서 이 함수의 Scheduled 표시와
+   예약 로그를 확인합니다. 배포 미리보기에서는 자동 예약이 실행되지 않습니다.
+4. 토큰 만료 전에 새 토큰을 같은 환경 변수에 등록하고 다시 배포합니다. 인증이 만료되거나
+   GitHub 호출이 실패하면 함수가 오류를 기록하며, 오류 응답이나 인증 값은 로그에 출력하지 않습니다.
+
+Netlify는 저장소와 워크플로가 고정된 GitHub API만 호출합니다. 글 원문과 Notion API 키는
+이 함수에 전달하지 않으며, 공개 URL로 이 예약 함수를 호출할 수도 없습니다.
 
 공개 저장소에서 장기간 활동이 없으면 GitHub가 예약 실행을 중지할 수 있으므로,
 30일간 커밋이 없을 때는 자동화 유지용 빈 커밋을 남깁니다. `[skip netlify]`를 붙여

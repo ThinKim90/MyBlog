@@ -1,9 +1,19 @@
 name: Publish Notion posts
+run-name: Publish Notion posts (${{ github.event_name == 'schedule' && 'github-schedule' || inputs.source || 'manual' }})
 
 on:
   schedule:
     - cron: '2-57/5 * * * *'
   workflow_dispatch:
+    inputs:
+      source:
+        description: Publication check source
+        required: false
+        default: manual
+        type: choice
+        options:
+          - manual
+          - netlify-schedule
 
 permissions:
   contents: write
