@@ -33,8 +33,8 @@ Notion이 요청 시각을 분 단위로 기록하므로 같은 분에 다시 �
 
 ## 반영 주기
 
-Netlify의 `poll-notion-publication` Scheduled Function이 5분마다 GitHub 발행 작업을 실행하도록 구성합니다.
-이 연결은 아래 전용 토큰을 등록하고 운영에 배포한 뒤 활성화됩니다. GitHub의 자체 예약 실행도
+Netlify의 `poll-notion-publication` Scheduled Function이 5분마다 GitHub 발행 작업을 실행합니다.
+전용 토큰 등록과 운영 배포를 완료해 활성화되어 있습니다. GitHub의 자체 예약 실행도
 보조 경로로 유지합니다. 2026-11-13~16 실제 GitHub 예약 실행은 약 3~7시간 간격으로 지연되어
 GitHub cron만으로는 5분 안팎의 반영을 기대할 수 없었습니다.
 
@@ -66,6 +66,13 @@ GitHub Secret도 함께 바꿔야 합니다. Netlify에는 이 키를 전달하�
 
 Netlify는 저장소와 워크플로가 고정된 GitHub API만 호출합니다. 글 원문과 Notion API 키는
 이 함수에 전달하지 않으며, 공개 URL로 이 예약 함수를 호출할 수도 없습니다.
+
+2026-11-16 운영 검증에서는 08:38(KST)에 누른 발행 요청을 08:40 Netlify 예약 호출이 처리했고,
+08:42 운영 반영을 확인했습니다. [실제 자동 실행 기록](https://github.com/ThinKim90/MyBlog/actions/runs/43776059518)에서
+원고 1개 반영, 테스트 48개·타입 검사·빌드 통과, GitHub 저장, 운영 버전 확인을 볼 수 있습니다.
+이 검증에서 GitHub나 Netlify의 수동 실행은 사용하지 않았습니다.
+08:45의 [다음 예약 실행](https://github.com/ThinKim90/MyBlog/actions/runs/43776498416)도 정상 완료됐고,
+새 요청이 없어서 설치·가져오기·빌드·배포를 모두 생략했습니다.
 
 공개 저장소에서 장기간 활동이 없으면 GitHub가 예약 실행을 중지할 수 있으므로,
 30일간 커밋이 없을 때는 자동화 유지용 빈 커밋을 남깁니다. `[skip netlify]`를 붙여
