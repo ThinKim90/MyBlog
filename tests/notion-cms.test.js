@@ -75,7 +75,7 @@ test('preview sync contains drafts only in the ignored cache and never creates a
   assert.deepEqual((await readManifest(h.root)).pages, {});
 });
 
-test('Published without a request never publishes, and test pages remain excluded even if requested', async t => {
+test('Published without a request never publishes, and explicit configured exclusions are respected', async t => {
   const h = await setup(t);
   h.state.pages[0].properties['발행 요청 시각'].date = null;
   await h.sync();
@@ -83,6 +83,27 @@ test('Published without a request never publishes, and test pages remain exclude
   h.state.pages[0] = page();
   await h.sync('publish', { config: { ...config, excludedPageIds: [id] } });
   assert.deepEqual((await readManifest(h.root)).pages, {});
+});
+
+test('the real CMS connection test follows normal publication rules and publishes its uploaded image', async t => {
+  const h = await setup(t);
+  const productionConfig = require('../notion-cms.config.json');
+  const connectionTestId = '41712f7c-14b7-8120-b615-d5d33a83f9bc';
+  h.state.pages = [page(connectionTestId, 'Published', firstRequest, 'notion-cms-test')];
+  h.state.pages[0].properties.Title.title[0].plain_text = '블로그 CMS 연결 테스트';
+  h.state.text = '운영 발행 확인\n\n![업로드 사진](https://prod-files-secure.s3.us-west-2.amazonaws.com/test/photo.png)';
+  const bytes = await fs.readFile(path.join(__dirname, '../static/favicon.png'));
+  const report = await h.sync('publish', { config: productionConfig, fetchImpl: async () => new Response(bytes) });
+  assert.equal(report.updated.length, 1);
+  assert.equal(report.updated[0].id, connectionTestId);
+  const directory = path.join(h.root, 'notion-content/posts', connectionTestId);
+  const content = await fs.readFile(path.join(directory, 'index.md'), 'utf8');
+  assert.match(content, /title: "블로그 CMS 연결 테스트"/);
+  assert.match(content, /slug: "\/notion-cms-test\/"/);
+  assert.match(content, /draft: false/);
+  const filename = content.match(/\.\/images\/([a-f0-9]{64}\.png)/)[1];
+  assert.deepEqual(await fs.readFile(path.join(directory, 'images', filename)), bytes);
+  assert.equal((await readManifest(h.root)).pages[connectionTestId].published, true);
 });
 
 test('an unfinished untitled draft does not block another requested article', async t => {
