@@ -40,21 +40,28 @@ Notion이 요청 시각을 분 단위로 기록하므로 같은 분에 다시 �
 
 ## 반영 주기
 
-Netlify의 `poll-notion-publication` Scheduled Function이 5분마다 GitHub 발행 작업을 실행합니다.
-전용 토큰 등록과 운영 배포를 완료해 활성화되어 있습니다. GitHub의 자체 예약 실행도
-보조 경로로 유지합니다. 2026-11-13~16 실제 GitHub 예약 실행은 약 3~7시간 간격으로 지연되어
-GitHub cron만으로는 5분 안팎의 반영을 기대할 수 없었습니다.
+Netlify의 `poll-notion-publication` Scheduled Function이 5분마다 Notion 글의 속성과
+GitHub main의 최신 공개본 관리 파일을 비교합니다. 새 발행 요청, 공개 글의 Draft 전환,
+휴지통 이동·다른 데이터베이스로 이동이 확인됐을 때만 GitHub 발행 작업을 실행합니다.
+원고 본문과 사진은 이 확인 단계에서 다운로드하지 않습니다.
+
+변경이 없으면 Netlify 로그에 `no_changes`를 남기고 끝나므로 Actions 실행 기록과
+Git 커밋, 빌드·배포가 생기지 않습니다. GitHub의 별도 cron과 30일 유지용 빈 커밋도
+제거했습니다. 수동 Run workflow는 유지합니다.
 
 새 요청이 없으면 의존성 설치와 배포를 건너뜁니다. 이미 대기하거나 실행 중인 발행 작업이 있으면
-Netlify는 새 실행을 추가하지 않습니다. 5분 간격 확인에 빌드·배포 시간이 추가되며 대기열에 따라
+Netlify는 새 실행을 추가하지 않습니다. 확인 중 API 오류나 권한 오류가 발생해도 실행하지 않고
+다음 예약 시점에 다시 확인합니다. 5분 간격 확인에 빌드·배포 시간이 추가되며 대기열에 따라
 더 늦어질 수 있습니다. GitHub 실행 제목의 `netlify-schedule`로 Netlify가 호출한 실행을 구분합니다.
 즉시 처리하고 싶으면 위 GitHub 페이지의 **Run workflow**로 같은 작업을 실행할 수 있습니다.
 변경 저장 후에는 공개 사이트의 `/cms-publication.json`을 확인해 Netlify 반영까지 검증합니다.
 
 이 경로는 Notion Webhook이나 Netlify 관리 토큰 없이 동작합니다. 컴퓨터를 켜둘 필요가 없습니다.
-Notion 읽기 키는 GitHub 저장소의 `NOTION_API_KEY` Actions Secret에만 등록합니다.
-별도 Notion 연결의 권한은 읽기만 있으면 됩니다. 키를 교체하면 로컬 `.env.notion`과
-GitHub Secret도 함께 바꿔야 합니다. Netlify에는 이 키를 전달하지 않습니다.
+Notion 읽기 키는 GitHub 저장소의 `NOTION_API_KEY` Actions Secret과 Netlify 운영 컨텍스트의
+동일한 이름의 비밀 환경 변수에 등록합니다. 별도 Notion 연결의 권한은 읽기만 있으면 됩니다.
+키를 교체하면 로컬 `.env.notion`, GitHub Secret, Netlify 운영 환경 변수를 함께 바꿉니다.
+브라우저 코드와 Git에는 키를 넣지 않습니다. GitHub 토큰은 GitHub 작업 호출에만 사용하며
+Notion API에는 전달하지 않습니다. Notion 키도 Notion API에만 전달합니다.
 
 ### Netlify 예약 실행 연결
 
@@ -68,11 +75,16 @@ GitHub Secret도 함께 바꿔야 합니다. Netlify에는 이 키를 전달하�
    토큰을 Git이나 본문에 넣지 않습니다.
 3. 운영에 재배포해 새 환경 변수를 적용합니다. Functions 화면에서 이 함수의 Scheduled 표시와
    예약 로그를 확인합니다. 배포 미리보기에서는 자동 예약이 실행되지 않습니다.
+   변경 사전 확인에는 `NOTION_API_KEY`도 필요합니다. 기존 읽기 전용 키를 같은 운영 전용
+   비밀 환경 변수로 등록합니다. Functions 범위 선택이 가능하면 Functions만 지정합니다.
+   무료 요금제에서는 운영의 Builds·Functions·Runtime 범위를 사용합니다.
 4. 토큰을 폐기하거나 교체할 때는 새 토큰을 같은 환경 변수에 등록하고 다시 배포합니다.
    GitHub 인증이나 호출이 실패하면 함수가 오류를 기록하며, 오류 응답이나 인증 값은 로그에 출력하지 않습니다.
 
-Netlify는 저장소와 워크플로가 고정된 GitHub API만 호출합니다. 글 원문과 Notion API 키는
-이 함수에 전달하지 않으며, 공개 URL로 이 예약 함수를 호출할 수도 없습니다.
+Netlify는 Notion 속성과 공개 GitHub main의 관리 파일을 읽어 새 요청을 확인합니다.
+관리 파일은 인증 없이 읽으므로 GitHub 전용 토큰에 Contents 권한을 추가하지 않습니다.
+관리 파일은 배포본에 포함된 사본 대신 GitHub main에서 읽어 Netlify 배포 지연으로 같은 요청이
+다시 실행되는 것을 막습니다. 공개 URL로 이 예약 함수를 호출할 수는 없습니다.
 
 2026-11-16 운영 검증에서는 08:38(KST)에 누른 발행 요청을 08:40 Netlify 예약 호출이 처리했고,
 08:42 운영 반영을 확인했습니다. [실제 자동 실행 기록](https://github.com/ThinKim90/MyBlog/actions/runs/43776059518)에서
@@ -81,9 +93,9 @@ Netlify는 저장소와 워크플로가 고정된 GitHub API만 호출합니다.
 08:45의 [다음 예약 실행](https://github.com/ThinKim90/MyBlog/actions/runs/43776498416)도 정상 완료됐고,
 새 요청이 없어서 설치·가져오기·빌드·배포를 모두 생략했습니다.
 
-공개 저장소에서 장기간 활동이 없으면 GitHub가 예약 실행을 중지할 수 있으므로,
-30일간 커밋이 없을 때는 자동화 유지용 빈 커밋을 남깁니다. `[skip netlify]`를 붙여
-이 유지 커밋으로 운영 배포가 발생하지 않도록 합니다.
+위 검증은 모든 확인을 Actions에서 수행하던 초기 구조의 기록입니다. 이후 빈 실행 기록을
+줄이기 위해 요청 확인을 Netlify로 옮겼습니다. 현재는 GitHub 예약 실행을 사용하지 않으므로
+GitHub cron의 장기 비활성화에 대비한 유지 커밋도 필요하지 않습니다.
 
 ## 로컬에서 모든 작업본 확인
 

@@ -1,9 +1,7 @@
 name: Publish Notion posts
-run-name: Publish Notion posts (${{ github.event_name == 'schedule' && 'github-schedule' || inputs.source || 'manual' }})
+run-name: Publish Notion posts (${{ inputs.source || 'manual' }})
 
 on:
-  schedule:
-    - cron: '2-57/5 * * * *'
   workflow_dispatch:
     inputs:
       source:
@@ -64,13 +62,3 @@ jobs:
       - name: Confirm production publication
         if: steps.sync.outputs.changed == 'true'
         run: node scripts/wait-notion-deploy.js
-      - name: Keep infrequent publication schedules active
-        if: steps.requests.outputs.pending == 'false'
-        run: |
-          age=$(( $(date +%s) - $(git log -1 --format=%ct) ))
-          if [ "$age" -ge 2592000 ]; then
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit --allow-empty -m 'Keep Notion publishing active [skip netlify]'
-            git push origin HEAD:main
-          fi
