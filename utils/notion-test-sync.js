@@ -54,7 +54,33 @@ function replaceRanges(text, replacements) {
 
 const unescapeAttribute = value => value.replace(/&amp;/g, '&').replace(/&quot;/g, '"');
 
+function replaceOutsideCode(markdown, pattern, convert) {
+  const protectedRanges = [];
+  walk(remark().parse(markdown), node => {
+    if (['code', 'inlineCode'].includes(node.type)) protectedRanges.push([node.position.start.offset, node.position.end.offset, node.type]);
+  });
+  const edits = [];
+  for (const match of markdown.matchAll(pattern)) {
+    const start = match.index;
+    const end = start + match[0].length;
+    if (protectedRanges.some(([a, b, type]) => type === 'code' ? start < b && end > a : start >= a && end <= b)) continue;
+    edits.push({ start, end, value: convert(match) });
+  }
+  return replaceRanges(markdown, edits);
+}
+
 function normaliseMarkdown(markdown) {
+  // Markdown v2 uses XML for annotated inline code and some paragraph/heading blocks.
+  // Turn only these known wrappers into Markdown before validating other HTML.
+  markdown = replaceOutsideCode(markdown, /<code>([\s\S]*?)<\/code>/g, match => {
+    const code = match[1].replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+    const width = Math.max(0, ...(code.match(/`+/g) || []).map(run => run.length)) + 1;
+    const fence = '`'.repeat(width);
+    const padded = /^`|`$|^ .* $/.test(code) ? ` ${code} ` : code;
+    return `${fence}${padded}${fence}`;
+  });
+  markdown = replaceOutsideCode(markdown, /<h([1-6])>\s*\n([\s\S]*?)\n[\t ]*<\/h\1>/g, match => `${'#'.repeat(Number(match[1]))} ${match[2].trim()}`);
+  markdown = replaceOutsideCode(markdown, /<p>\s*\n([\s\S]*?)\n[\t ]*<\/p>/g, match => match[1].trim());
   const edits = [];
   walk(remark().parse(markdown), node => {
     if (!['html', 'paragraph'].includes(node.type)) return;
@@ -71,7 +97,7 @@ function normaliseMarkdown(markdown) {
       return;
     } else if (/^<p\s*\/>\s*$/.test(value)) {
       edits.push({ start: node.position.start.offset, end: node.position.end.offset, value: '\n' });
-    } else if (/^<\/?(?:b|i|s|u)>$/.test(value)) {
+    } else if (/^<\/?(?:b|i|s|u)>$/.test(value) || /^<br\s*\/?>$/.test(value)) {
       // Markdown v2 exports ordinary inline emphasis as these attribute-free tags.
       // Keep them intact so Gatsby also preserves formatting at word/space boundaries.
       return;
@@ -125,7 +151,7 @@ async function downloadImage(value, fetchImpl = fetch) {
   }
 }
 
-async function preparePage({ request, page, fetchImpl = fetch }) {
+async function preparePage({ request, page, fetchImpl = fetch, preservedImages = [] }) {
   const id = pageIdFrom(page.id);
   const metadata = metadataFrom(page);
   const result = await request(`/pages/${id}/markdown?markdown_version=v2`);
@@ -148,6 +174,17 @@ async function preparePage({ request, page, fetchImpl = fetch }) {
   const downloads = new Map();
   const replacements = [];
   for (const { node, url } of imageNodes) {
+    const preserved = preservedImages.find(image => image.url === url);
+    if (preserved) {
+      if (!/^\/images\/[a-zA-Z0-9._~-]+$/.test(preserved.src) ||
+          !Number.isInteger(preserved.maxWidth) || preserved.maxWidth <= 0 || preserved.maxWidth > 8000) {
+        throw new Error('이전 이미지의 고정 주소와 표시 크기 설정을 확인하세요.');
+      }
+      const alt = (node.alt || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      replacements.push({ start: node.position.start.offset, end: node.position.end.offset,
+        value: `<img src="${preserved.src}" alt="${alt}" style="max-width: ${preserved.maxWidth}px; width: 100%;" />` });
+      continue;
+    }
     if (!downloads.has(url)) {
       const image = await downloadImage(url, fetchImpl);
       const hash = crypto.createHash('sha256').update(image.bytes).digest('hex');

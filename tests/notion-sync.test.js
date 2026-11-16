@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
-const { pageIdFrom, metadataFrom, createNotionClient, normaliseMarkdown, downloadImage, syncTestPage } = require('../utils/notion-test-sync');
+const { pageIdFrom, metadataFrom, createNotionClient, normaliseMarkdown, downloadImage, syncTestPage, preparePage } = require('../utils/notion-test-sync');
 
 const id = 'e7f189ab-42e8-46ba-828a-b9f5720b56cf';
 const photoURL = 'https://prod-files-secure.s3.us-west-2.amazonaws.com/test/photo.png?signature=private';
@@ -200,6 +200,35 @@ test('Notion Markdown v2 inline emphasis in links and quotes preserves ordinary 
   assert.ok((await h.read()).includes(h.state.markdown));
   assert.throws(() => normaliseMarkdown('<b onclick="run()">지원하지 않는 속성</b>'), /전용 서식/);
   assert.throws(() => normaliseMarkdown('<span color="red">색상</span>'), /전용 서식/);
+});
+
+test('migrated photos retain their original public paths and widths, while replacement uploads are copied normally', async t => {
+  const h = await harness(t);
+  const preservedImages = require('../notion-cms.config.json').preservedImages;
+  h.state.markdown = '서평<br />줄바꿈\n\n![책 "표지"](' + preservedImages[0].url + ')';
+  const first = await preparePage({ request: h.request, page: h.state.page, fetchImpl: h.fetchImpl, preservedImages });
+  assert.equal(h.state.calls.length, 0);
+  assert.equal(first.images.length, 0);
+  assert.match(first.body, /<img src="\/images\/data-ux-book.jpg" alt="책 &quot;표지&quot;" style="max-width: 300px; width: 100%;" \/>/);
+  assert.ok(first.body.includes('<br />'));
+  h.state.markdown = `![새 책 표지](${photoURL})`;
+  const replaced = await preparePage({ request: h.request, page: h.state.page, fetchImpl: h.fetchImpl, preservedImages });
+  assert.equal(replaced.images.length, 1);
+  assert.match(replaced.body, /\.\/images\/[a-f0-9]{64}\.png/);
+  h.state.markdown = '![외부 사진](https://example.com/private.png)';
+  await assert.rejects(preparePage({ request: h.request, page: h.state.page, fetchImpl: h.fetchImpl, preservedImages }), /직접 업로드/);
+});
+
+test('Notion inline-code XML protects literal HTML and backticks without changing fenced examples', () => {
+  const remark = require('remark');
+  const markdown = normaliseMarkdown('사용: <code><div></code>와 <code>\u0060value\u0060</code>\n\n```html\n<code><canvas></code>\n```');
+  const nodes = remark().parse(markdown).children;
+  assert.deepEqual(nodes[0].children.filter(n => n.type === 'inlineCode').map(n => n.value), ['<div>', '`value`']);
+  assert.equal(nodes[1].value, '<code><canvas></code>');
+  assert.ok(!nodes[0].children.some(n => n.type === 'html'));
+  assert.equal(normaliseMarkdown('<h1>\n제목  \n</h1>\n\n<p>\n<b>장점</b>:\n</p>'), '# 제목\n\n<b>장점</b>:');
+  assert.equal(normaliseMarkdown('- 항목\n  <p>\n  <b>장점</b>:\n  </p>'), '- 항목\n  <b>장점</b>:');
+  assert.throws(() => normaliseMarkdown('<p>\n<script>bad</script>\n</p>'), /전용 서식/);
 });
 
 test('credentials, permissions and retry failures are distinguishable without exposing secret values', async () => {

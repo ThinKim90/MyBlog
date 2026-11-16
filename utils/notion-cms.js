@@ -116,7 +116,7 @@ async function syncCms({ root, request, config, mode = 'preview', fetchImpl = fe
         continue;
       }
       const slug = slugFor(page, previous);
-      const prepared = await preparePage({ request, page, fetchImpl });
+      const prepared = await preparePage({ request, page, fetchImpl, preservedImages: config.preservedImages });
       if (!prepared.body.trim()) {
         if (mode === 'publish') throw new Error(`${metadata.title}: 본문이 비어 있어 발행할 수 없습니다.`);
         report.skipped.push({ id, reason: '빈 본문' });

@@ -12,6 +12,84 @@
       "requestedAt": "2026-11-15T23:54:00.000Z",
       "published": true,
       "revision": "012f1b4e4645a453720130e2d383c815dd432e480588f2fa05d06b451bc96f41"
+    },
+    "41a12f7c-14b7-8113-a3dc-f4e3e9b1255e": {
+      "slug": "/layout-essentials-book-review/",
+      "requestedAt": null,
+      "published": true,
+      "revision": "6694e97f9a5e59add41317bc7849fb3023d465e031b4a03b231d5bbf565f3530"
+    },
+    "41a12f7c-14b7-8119-9344-ddfcc562f34f": {
+      "slug": "/weatherlogue-review/",
+      "requestedAt": null,
+      "published": true,
+      "revision": "33775729ff4f1f0c0229378f0dbde866afa536db5bac4418ce60010da4b1c16b"
+    },
+    "41a12f7c-14b7-8132-9cd2-ebdb3f89d513": {
+      "slug": "/odd-color-out-review/",
+      "requestedAt": null,
+      "published": true,
+      "revision": "caa0e1b34956a8a53fe437d03505c12a7ddec26f200ae27afae170cf9462542e"
+    },
+    "41a12f7c-14b7-8132-bff4-f2644014d0c8": {
+      "slug": "/vibecoding-cursormafia-test/",
+      "requestedAt": null,
+      "published": true,
+      "revision": "74f882c50fad21ddffef199f8e85b49fb7ab500340dac52ec855c750372114e6"
+    },
+    "41a12f7c-14b7-8143-8303-c72855ad5ab6": {
+      "slug": "/devel-challenge-data-ux-part1/",
+      "requestedAt": null,
+      "published": true,
+      "revision": "1a8132aad5d749298434024f99e886401c2ae4ffa98cd63a832a1c55d058903a"
+    },
+    "41a12f7c-14b7-8147-b03d-e327580f7afb": {
+      "slug": "/edgecase-ai-review/",
+      "requestedAt": null,
+      "published": true,
+      "revision": "30ec59cd29e9277b35c26967b05dd51436ac3f4e28d5a4efdc711dedf4e76b1e"
+    },
+    "41a12f7c-14b7-8162-8699-c8108feaef92": {
+      "slug": "/stellarpath-review/",
+      "requestedAt": null,
+      "published": true,
+      "revision": "0376a7a22436497b6d044d6ef75d6a73cab5ba5b365985f1d1ddc02a147d4073"
+    },
+    "41a12f7c-14b7-8180-b234-fcae8c7169d9": {
+      "slug": "/building-blog-with-cursor/",
+      "requestedAt": null,
+      "published": true,
+      "revision": "5fdcbc7ce25337e91acafc3115916325c73cd7d2d5c2ba267d7be2fe213fb00a"
+    },
+    "41a12f7c-14b7-81a8-8a18-ee5fab7ef354": {
+      "slug": "/fitgrape-review/",
+      "requestedAt": null,
+      "published": true,
+      "revision": "cfb94da32284fcec66a32c2220a67c740c99a5ad3087cf14d985e4d18c326d57"
+    },
+    "41a12f7c-14b7-81cc-8f8d-e92425f5e1b0": {
+      "slug": "/taste-notes-review/",
+      "requestedAt": null,
+      "published": true,
+      "revision": "8f4df52780eb7d0de5717d6a64d5fa9adca2b7c63aff019aad8d8f8623f24b41"
+    },
+    "41a12f7c-14b7-81da-a3d0-eef464f2d389": {
+      "slug": "/thinplan-2026-review/",
+      "requestedAt": null,
+      "published": true,
+      "revision": "831fce03e90af49e5bcba43fc935bcb1c60b81c5219e575bbb8a802080252a4b"
+    },
+    "41a12f7c-14b7-81ef-b1e1-e7b4f4417b61": {
+      "slug": "/recording-my-journey/",
+      "requestedAt": null,
+      "published": true,
+      "revision": "a0d754d713e9d168cfc7cfbd408d43649f98363f2355aa07b6b870f7f2f74fca"
+    },
+    "41a12f7c-14b7-81ff-8294-c8bc22c8f172": {
+      "slug": "/jinjja-gosu-review/",
+      "requestedAt": null,
+      "published": true,
+      "revision": "1146cb1b410a610cbc5420f16be95a4729e534d256735e10f6f7c9366ede57d6"
     }
   },
   "dataSourceId": "27212f7c-14b7-808a-9f8e-000bbdd28c1f"
